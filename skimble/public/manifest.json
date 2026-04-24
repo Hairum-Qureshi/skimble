@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Skimble",
+  "version": "1.0",
+  "description": "A simple Chrome extension.",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["script.js"]
+    }
+  ]
+}

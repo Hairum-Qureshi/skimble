@@ -2,8 +2,9 @@
 1. Clone the repo
 2. `cd` into `skimble` directory
 3. Run `npm run dev` and open up `http://localhost:5173`. You should see the page open up successfully
-4. Run `npm run build` 
-5. Inside of your newly created `dist` folder, add the following `manifest.json` file to it:
+4. Run `npm run watch` in a separate terminal - VSCode will now listen for changes.
+4. Make a change in `main.ts` or `index.html` and then run `npm run build` 
+5. Inside of the `public` folder, add the following `manifest.json` file to it:
 ```json
 {
   "manifest_version": 3,
@@ -27,3 +28,9 @@
 7. Click the 'Load Unpacked' button
 8. Select the `dist` folder inside of `/skimble/dist`
 9. You should now see the extension `Skimble` listed as part of your extensions
+
+## Showing new changes:
+1. Add your content
+2. Run `npm run build`
+3. Toggle the Skimble extension off and then on again
+4. Refresh the page you want to view the extension on and it should reflect those changes.
