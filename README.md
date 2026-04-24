@@ -12,7 +12,13 @@
   "description": "A simple Chrome extension.",
   "action": {
     "default_popup": "index.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["script.js"]
+    }
+  ]
 }
 ```
 6. Depending on your browser:
