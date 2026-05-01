@@ -114,6 +114,12 @@ document.addEventListener("mouseup", () => {
 // --- Build Function ---
 function buildTableOfContents(tags: NodeListOf<Element>) {
   tableOfContentsListContainer.innerHTML = "";
+
+  if (!tags.length) return;
+
+  tableOfContentsDiv.appendChild(tableOfContentsListContainer);
+  document.body.appendChild(tableOfContentsDiv);
+
   tags.forEach((tag) => {
     if (tag.textContent?.trim()) {
       const listItem = document.createElement("li");
@@ -131,9 +137,6 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
     }
   });
 }
-
-tableOfContentsDiv.appendChild(tableOfContentsListContainer);
-document.body.appendChild(tableOfContentsDiv);
 
 if (document.readyState === "complete") {
   buildTableOfContents(init());
