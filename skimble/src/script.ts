@@ -39,9 +39,36 @@ const title = document.createElement("strong");
 title.textContent = "⠿ Contents";
 header.appendChild(title);
 
+// -- Close Button ---
+const closeBtn = document.createElement("button");
+closeBtn.textContent = "×"; // Multiplication sign (close icon)
+Object.assign(closeBtn.style, {
+  border: "none",
+  background: "#ff4d4d", // light red background for close button
+  borderRadius: "4px",
+  color: "#fff",
+  width: "24px",
+  height: "24px",
+  cursor: "pointer",
+  fontSize: "16px",
+  fontWeight: "bold",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginLeft: "60px",
+});
+
+closeBtn.onclick = () => {
+  const confirmation = confirm(
+    "Are you sure you want to close the table of contents? You can always reopen it by refreshing the page.",
+  );
+  if (!confirmation) return;
+  tableOfContentsDiv.remove();
+};
+
 // --- Collapse Button ---
 const collapseBtn = document.createElement("button");
-collapseBtn.textContent = "−"; // En-dash for minus
+collapseBtn.textContent = "-"; // Minus sign
 Object.assign(collapseBtn.style, {
   border: "none",
   background: "#eee",
@@ -56,6 +83,7 @@ Object.assign(collapseBtn.style, {
   justifyContent: "center",
 });
 
+header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
 tableOfContentsDiv.appendChild(header);
 
@@ -82,7 +110,7 @@ collapseBtn.onclick = (e) => {
   } else {
     tableOfContentsListContainer.style.display = "block";
     header.style.borderBottom = "1px solid #eee";
-    collapseBtn.textContent = "−";
+    collapseBtn.textContent = "-";
     tableOfContentsDiv.style.width = "250px";
   }
 };
