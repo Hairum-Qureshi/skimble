@@ -1,12 +1,6 @@
 function init(): NodeListOf<Element> {
-  const tags = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+  const tags = document.querySelectorAll("h1, h2, h3");
   return tags;
-}
-
-if (document.readyState === "complete") {
-  buildTableOfContents(init());
-} else {
-  window.addEventListener("load", () => buildTableOfContents(init()));
 }
 
 const tableOfContentsDiv = document.createElement("div");
@@ -14,94 +8,135 @@ tableOfContentsDiv.id = "table-of-contents";
 
 // --- Styling the Container ---
 Object.assign(tableOfContentsDiv.style, {
-    position: "fixed", // Crucial for dragging relative to viewport
-    top: "20px",
-    right: "20px",
-    width: "250px",
-    maxHeight: "80vh",
-    backgroundColor: "#ffffff",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "15px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    zIndex: "999999",
-    overflowY: "auto",
-    userSelect: "none" // Prevents text highlighting while dragging
+  position: "fixed",
+  top: "20px",
+  right: "20px",
+  width: "250px",
+  backgroundColor: "#ffffff",
+  border: "1px solid #ccc",
+  borderRadius: "8px",
+  padding: "10px 15px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  zIndex: "999999",
+  fontFamily: "sans-serif",
+  userSelect: "none",
 });
 
-// --- Drag Handle (The Title) ---
-const dragHandle = document.createElement("div");
-dragHandle.style.cursor = "move";
-dragHandle.style.borderBottom = "1px solid #eee";
-dragHandle.style.marginBottom = "10px";
-dragHandle.style.paddingBottom = "5px";
+// --- Header / Drag Handle ---
+const header = document.createElement("div");
+Object.assign(header.style, {
+  cursor: "move",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingBottom: "5px",
+  borderBottom: "1px solid #eee",
+});
 
 const title = document.createElement("strong");
-title.textContent = "⠿ Page Contents"; // Added a drag icon hint
-dragHandle.appendChild(title);
-tableOfContentsDiv.appendChild(dragHandle);
+title.textContent = "⠿ Contents";
+header.appendChild(title);
+
+// --- Collapse Button ---
+const collapseBtn = document.createElement("button");
+collapseBtn.textContent = "−"; // En-dash for minus
+Object.assign(collapseBtn.style, {
+  border: "none",
+  background: "#eee",
+  borderRadius: "4px",
+  width: "24px",
+  height: "24px",
+  cursor: "pointer",
+  fontSize: "16px",
+  fontWeight: "bold",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+header.appendChild(collapseBtn);
+tableOfContentsDiv.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
 tableOfContentsListContainer.id = "table-of-contents-list";
-tableOfContentsListContainer.style.listStyle = "none";
-tableOfContentsListContainer.style.padding = "0";
+Object.assign(tableOfContentsListContainer.style, {
+  padding: "10px 0 0 20px",
+  margin: "0",
+  maxHeight: "70vh",
+  overflowY: "auto",
+  transition: "all 0.2s ease", // Smooth opening/closing
+});
+
+// --- Collapse Logic ---
+let isCollapsed = false;
+
+collapseBtn.onclick = (e) => {
+  e.stopPropagation(); // Don't trigger drag mousedown
+  isCollapsed = !isCollapsed;
+
+  if (isCollapsed) {
+    tableOfContentsListContainer.style.display = "none";
+    header.style.borderBottom = "none";
+    collapseBtn.textContent = "+";
+    tableOfContentsDiv.style.width = "140px"; // Shrink width when collapsed
+  } else {
+    tableOfContentsListContainer.style.display = "block";
+    header.style.borderBottom = "1px solid #eee";
+    collapseBtn.textContent = "−";
+    tableOfContentsDiv.style.width = "250px";
+  }
+};
 
 // --- Drag Logic ---
 let isDragging = false;
 let offsetX = 0;
 let offsetY = 0;
 
-dragHandle.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    // Calculate where the mouse is relative to the div's top-left corner
-    const rect = tableOfContentsDiv.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    
-    dragHandle.style.backgroundColor = "#f0f0f0";
+header.addEventListener("mousedown", (e) => {
+  if (e.target === collapseBtn) return; // Don't drag if clicking the button
+  isDragging = true;
+  const rect = tableOfContentsDiv.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
 });
 
 document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-
-    // Calculate new position
-    let newX = e.clientX - offsetX;
-    let newY = e.clientY - offsetY;
-
-    // Update styles (using 'left' instead of 'right' for easier math)
-    tableOfContentsDiv.style.right = "auto"; 
-    tableOfContentsDiv.style.left = `${newX}px`;
-    tableOfContentsDiv.style.top = `${newY}px`;
+  if (!isDragging) return;
+  tableOfContentsDiv.style.right = "auto";
+  tableOfContentsDiv.style.left = `${e.clientX - offsetX}px`;
+  tableOfContentsDiv.style.top = `${e.clientY - offsetY}px`;
 });
 
 document.addEventListener("mouseup", () => {
-    isDragging = false;
-    dragHandle.style.backgroundColor = "transparent";
+  isDragging = false;
 });
 
+// --- Build Function ---
 function buildTableOfContents(tags: NodeListOf<Element>) {
-
-    tags.forEach((tag) => {
-        if (tag.id) {
-            const listItem = document.createElement("li");
-            listItem.style.marginBottom = "5px";
-
-            const link = document.createElement("a");
-            
-            link.href = tag.id ? `#${tag.id}` : "javascript:void(0)";
-            link.textContent = tag.textContent.trim();
-            
-            Object.assign(link.style, {
-                color: "#007bff",
-                textDecoration: "none",
-                fontSize: "14px"
-            });
-
-            listItem.appendChild(link);
-            tableOfContentsListContainer.appendChild(listItem);
-        }
-    });
+  tableOfContentsListContainer.innerHTML = "";
+  tags.forEach((tag) => {
+    if (tag.textContent?.trim()) {
+      const listItem = document.createElement("li");
+      listItem.style.marginBottom = "8px";
+      const link = document.createElement("a");
+      link.href = tag.id ? `#${tag.id}` : "javascript:void(0)";
+      link.textContent = tag.textContent.trim();
+      Object.assign(link.style, {
+        color: "#007bff",
+        textDecoration: "none",
+        fontSize: "13px",
+      });
+      listItem.appendChild(link);
+      tableOfContentsListContainer.appendChild(listItem);
+    }
+  });
 }
 
 tableOfContentsDiv.appendChild(tableOfContentsListContainer);
 document.body.appendChild(tableOfContentsDiv);
+
+if (document.readyState === "complete") {
+  buildTableOfContents(init());
+} else {
+  window.addEventListener("load", () => buildTableOfContents(init()));
+}
