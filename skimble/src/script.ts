@@ -1,3 +1,5 @@
+import isUrlBlacklisted from "./url_blacklist";
+
 function init(): NodeListOf<Element> {
   const tags = document.querySelectorAll("h1, h2, h3");
   return tags;
@@ -113,7 +115,7 @@ document.addEventListener("mouseup", () => {
 function buildTableOfContents(tags: NodeListOf<Element>) {
   tableOfContentsListContainer.innerHTML = "";
 
-  if (!tags.length) return;
+  if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
   tableOfContentsDiv.appendChild(tableOfContentsListContainer);
   document.body.appendChild(tableOfContentsDiv);
