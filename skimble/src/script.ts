@@ -76,9 +76,7 @@ collapseBtn.onclick = (e) => {
 
   if (isCollapsed) {
     tableOfContentsListContainer.style.display = "none";
-    header.style.borderBottom = "none";
     collapseBtn.textContent = "+";
-    tableOfContentsDiv.style.width = "140px"; // Shrink width when collapsed
   } else {
     tableOfContentsListContainer.style.display = "block";
     header.style.borderBottom = "1px solid #eee";
