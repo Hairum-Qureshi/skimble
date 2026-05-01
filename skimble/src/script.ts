@@ -1,6 +1,11 @@
-import isUrlBlacklisted from "./url_blacklist";
+import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 
 function init(): NodeListOf<Element> {
+  const mainContent = document.querySelector("main");
+  if (mainContent) {
+    const mainTags = mainContent.querySelectorAll("h1, h2, h3");
+    if (mainTags.length > 0) return mainTags;
+  }
   const tags = document.querySelectorAll("h1, h2, h3");
   return tags;
 }
@@ -149,6 +154,8 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
   document.body.appendChild(tableOfContentsDiv);
 
   tags.forEach((tag) => {
+    if (isHeaderBlacklisted(tag.textContent || "")) return;
+
     if (tag.textContent?.trim()) {
       const listItem = document.createElement("li");
       listItem.style.marginBottom = "8px";
