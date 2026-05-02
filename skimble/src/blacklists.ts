@@ -12,6 +12,7 @@ const urlBlacklist = [
   "*://*.amazon.com/*",
   "*://*.twitch.tv/*",
   "*://*.spotify.com/*",
+  "*://*.github.com/*",
   "*://www.google.com/search*",
   "*://drive.google.com/*",
   "*://calendar.google.com/*",
