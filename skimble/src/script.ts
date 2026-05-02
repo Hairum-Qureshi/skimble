@@ -2,6 +2,8 @@ import { Readability } from "@mozilla/readability";
 import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
 
+// TODO - need to make all the links black when isArticleReaderModeActive is true
+
 function renderArticleReaderModeUIOverlay(content: string) {
   const sanitizedContent = DOMPurify.sanitize(content);
 
@@ -14,10 +16,14 @@ function renderArticleReaderModeUIOverlay(content: string) {
     height: "100%",
     backgroundColor: "#ffffff",
     zIndex: "999998",
-    overflowY: "auto",
+    overflowY: "scroll",
     padding: "40px 20px",
     boxSizing: "border-box",
   });
+
+  readerModeOverlay.id = "article-reader-overlay";
+  /* Prevent background scrolling when overlay is active */
+  document.body.style.overflow = "hidden";
 
   const articleContainer = document.createElement("div");
   Object.assign(articleContainer.style, {
@@ -27,29 +33,10 @@ function renderArticleReaderModeUIOverlay(content: string) {
     lineHeight: "1.6",
     color: "#000000",
   });
+
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
   document.body.appendChild(readerModeOverlay);
-
-  // 1. Add the listener to the container
-  articleContainer.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement;
-
-    // 2. Check if the clicked element is an anchor link starting with #
-    if (target.getAttribute("href")?.startsWith("#")) {
-      event.preventDefault();
-      const id = target.getAttribute("href")?.slice(1);
-      const element = readerModeOverlay.querySelector(`#${CSS.escape(id!)}`);
-
-      if (element) {
-        // 3. Manually scroll the OVERLAY, not the window
-        element.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }
-  });
 }
 
 function init(): NodeListOf<Element> {
@@ -99,10 +86,10 @@ header.appendChild(title);
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
-closeBtn.textContent = "×"; // Multiplication sign (close icon)
+closeBtn.textContent = "×";
 Object.assign(closeBtn.style, {
   border: "none",
-  background: "#ff4d4d", // light red background for close button
+  background: "#ff4d4d",
   borderRadius: "4px",
   color: "#fff",
   width: "24px",
@@ -126,7 +113,8 @@ closeBtn.onclick = () => {
 
 // --- Collapse Button ---
 const collapseBtn = document.createElement("button");
-collapseBtn.textContent = "-"; // Minus sign
+collapseBtn.textContent = "-";
+
 Object.assign(collapseBtn.style, {
   border: "none",
   background: "#eee",
@@ -147,6 +135,7 @@ tableOfContentsDiv.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
 tableOfContentsListContainer.id = "table-of-contents-list";
+
 Object.assign(tableOfContentsListContainer.style, {
   padding: "10px 0 0 20px",
   margin: "0",
@@ -217,15 +206,38 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
       const listItem = document.createElement("li");
       listItem.style.marginBottom = "8px";
       const link = document.createElement("a");
-      link.href = tag.id ? `#${tag.id}` : "javascript:void(0)";
+      if (!tag.id) return;
+
+      link.href = `#${tag.id}`;
       link.textContent = tag.textContent.trim();
+
       Object.assign(link.style, {
         color: "#007bff",
         textDecoration: "none",
         fontSize: "13px",
       });
+
       listItem.appendChild(link);
       tableOfContentsListContainer.appendChild(listItem);
+
+      listItem.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const overlay = document.getElementById("article-reader-overlay");
+        // Find the header inside the overlay article container
+        const articleContainer = overlay?.querySelector("div");
+        const targetInOverlay = articleContainer?.querySelector(
+          `[id="${tag.id}"]`,
+        );
+
+        if (overlay && targetInOverlay) {
+          // OffsetTop is relative to the parent; scroll the overlay directly
+          overlay.scrollTo({
+            top: (targetInOverlay as HTMLElement).offsetTop - 20, // 20px padding from the top
+            behavior: "smooth",
+          });
+        }
+      });
     }
   });
 }
