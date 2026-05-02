@@ -129,7 +129,7 @@ Object.assign(closeBtn.style, {
 
 closeBtn.onclick = () => {
   const confirmation = confirm(
-    "Are you sure you want to close the table of contents? You can always reopen it by refreshing the page.",
+    "Are you sure you want to hide the widget? You can always reopen it by refreshing the page.",
   );
   if (!confirmation) return;
   tableOfContentsDiv.remove();
