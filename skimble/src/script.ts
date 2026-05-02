@@ -36,10 +36,7 @@ function renderArticleReaderModeUIOverlay(content: string) {
     const target = event.target as HTMLElement;
 
     // 2. Check if the clicked element is an anchor link starting with #
-    if (
-      target.tagName === "a" &&
-      target.getAttribute("href")?.startsWith("#")
-    ) {
+    if (target.getAttribute("href")?.startsWith("#")) {
       event.preventDefault();
       const id = target.getAttribute("href")?.slice(1);
       const element = readerModeOverlay.querySelector(`#${CSS.escape(id!)}`);
@@ -59,16 +56,6 @@ function init(): NodeListOf<Element> {
   const mainContent = document.querySelector("main");
   if (mainContent) {
     const mainTags = mainContent.querySelectorAll("h1, h2, h3");
-
-    // 1. Clone the document so the original page stays functional
-    const documentClone = document.cloneNode(true) as Document;
-
-    // 2. Parse the clone
-    const article = new Readability(documentClone).parse();
-
-    // 3. Now use article.content to fill your Reader Mode UI
-    if (article && article.content)
-      renderArticleReaderModeUIOverlay(article.content);
 
     if (mainTags.length > 0) return mainTags;
   }
@@ -214,6 +201,11 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
   tableOfContentsListContainer.innerHTML = "";
 
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
+
+  const documentClone = document.cloneNode(true) as Document;
+  const article = new Readability(documentClone).parse();
+  if (article && article.content)
+    renderArticleReaderModeUIOverlay(article.content);
 
   tableOfContentsDiv.appendChild(tableOfContentsListContainer);
   document.body.appendChild(tableOfContentsDiv);
