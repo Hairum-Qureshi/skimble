@@ -3,6 +3,7 @@ import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
 
 // TODO - need to make all the links black when isArticleReaderModeActive is true
+// TODO - add a 'turn reader mode off' toggle
 
 function renderArticleReaderModeUIOverlay(content: string) {
   const sanitizedContent = DOMPurify.sanitize(content);
@@ -83,6 +84,7 @@ Object.assign(mainHeader.style, {
   textAlign: "center",
   fontWeight: "bold",
   fontSize: "18px",
+  color: "black",
   margin: "10px 0 15px 0",
 });
 
@@ -97,6 +99,7 @@ Object.assign(header.style, {
   alignItems: "center",
   paddingBottom: "5px",
   borderBottom: "1px solid #eee",
+  color: "black",
 });
 
 const tocHeader = document.createElement("strong");
