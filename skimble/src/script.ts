@@ -25,11 +25,34 @@ function renderArticleReaderModeUIOverlay(content: string) {
     margin: "0 auto",
     fontSize: "18px",
     lineHeight: "1.6",
-    color: "#333",
+    color: "#000000",
   });
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
   document.body.appendChild(readerModeOverlay);
+
+  // 1. Add the listener to the container
+  articleContainer.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+
+    // 2. Check if the clicked element is an anchor link starting with #
+    if (
+      target.tagName === "a" &&
+      target.getAttribute("href")?.startsWith("#")
+    ) {
+      event.preventDefault();
+      const id = target.getAttribute("href")?.slice(1);
+      const element = readerModeOverlay.querySelector(`#${CSS.escape(id!)}`);
+
+      if (element) {
+        // 3. Manually scroll the OVERLAY, not the window
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
+  });
 }
 
 function init(): NodeListOf<Element> {
@@ -44,9 +67,8 @@ function init(): NodeListOf<Element> {
     const article = new Readability(documentClone).parse();
 
     // 3. Now use article.content to fill your Reader Mode UI
-    if (article && article.content) {
+    if (article && article.content)
       renderArticleReaderModeUIOverlay(article.content);
-    }
 
     if (mainTags.length > 0) return mainTags;
   }
@@ -188,7 +210,6 @@ document.addEventListener("mouseup", () => {
   isDragging = false;
 });
 
-// --- Build Function ---
 function buildTableOfContents(tags: NodeListOf<Element>) {
   tableOfContentsListContainer.innerHTML = "";
 
