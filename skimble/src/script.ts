@@ -69,7 +69,26 @@ Object.assign(tableOfContentsDiv.style, {
   userSelect: "none",
 });
 
-// --- Header / Drag Handle ---
+// --- Container (stacks headers vertically) ---
+const headerContainer = document.createElement("div");
+Object.assign(headerContainer.style, {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+});
+
+// --- Top Header ---
+const mainHeader = document.createElement("div");
+Object.assign(mainHeader.style, {
+  textAlign: "center",
+  fontWeight: "bold",
+  fontSize: "18px",
+  margin: "10px 0 15px 0",
+});
+
+mainHeader.textContent = "Skimble Reader Widget";
+
+// --- Bottom Header / Drag Handle ---
 const header = document.createElement("div");
 Object.assign(header.style, {
   cursor: "move",
@@ -80,9 +99,14 @@ Object.assign(header.style, {
   borderBottom: "1px solid #eee",
 });
 
-const title = document.createElement("strong");
-title.textContent = "⠿ Contents";
-header.appendChild(title);
+const tocHeader = document.createElement("strong");
+tocHeader.textContent = "⠿ Contents";
+
+header.appendChild(tocHeader);
+
+// --- Assemble ---
+headerContainer.appendChild(mainHeader);
+headerContainer.appendChild(header);
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
@@ -131,6 +155,7 @@ Object.assign(collapseBtn.style, {
 
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
+tableOfContentsDiv.appendChild(headerContainer);
 tableOfContentsDiv.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
