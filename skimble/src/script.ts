@@ -1,9 +1,53 @@
+import { Readability } from "@mozilla/readability";
 import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
+import DOMPurify from "dompurify";
+
+function renderArticleReaderModeUIOverlay(content: string) {
+  const sanitizedContent = DOMPurify.sanitize(content);
+
+  const readerModeOverlay = document.createElement("div");
+  Object.assign(readerModeOverlay.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#ffffff",
+    zIndex: "999998",
+    overflowY: "auto",
+    padding: "40px 20px",
+    boxSizing: "border-box",
+  });
+
+  const articleContainer = document.createElement("div");
+  Object.assign(articleContainer.style, {
+    maxWidth: "800px",
+    margin: "0 auto",
+    fontSize: "18px",
+    lineHeight: "1.6",
+    color: "#333",
+  });
+  articleContainer.innerHTML = sanitizedContent;
+  readerModeOverlay.appendChild(articleContainer);
+  document.body.appendChild(readerModeOverlay);
+}
 
 function init(): NodeListOf<Element> {
   const mainContent = document.querySelector("main");
   if (mainContent) {
     const mainTags = mainContent.querySelectorAll("h1, h2, h3");
+
+    // 1. Clone the document so the original page stays functional
+    const documentClone = document.cloneNode(true) as Document;
+
+    // 2. Parse the clone
+    const article = new Readability(documentClone).parse();
+
+    // 3. Now use article.content to fill your Reader Mode UI
+    if (article && article.content) {
+      renderArticleReaderModeUIOverlay(article.content);
+    }
+
     if (mainTags.length > 0) return mainTags;
   }
   const tags = document.querySelectorAll("h1, h2, h3");
