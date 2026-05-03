@@ -3,7 +3,24 @@ import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
 
 // TODO - need to make all the links black when isArticleReaderModeActive is true
-// TODO - add a 'turn reader mode off' toggle
+let readerMode = false;
+
+function anchorClickHandler(e: MouseEvent, id: string) {
+  const overlay = document.querySelector("#article-reader-overlay");
+  // Find the header inside the overlay article container
+  const articleContainer = overlay?.querySelector("div");
+  const targetInOverlay = articleContainer?.querySelector(`[id="${id}"]`);
+
+  if (overlay && targetInOverlay) {
+    e.preventDefault();
+
+    // OffsetTop is relative to the parent; scroll the overlay directly
+    overlay.scrollTo({
+      top: (targetInOverlay as HTMLElement).offsetTop - 20, // 20px padding from the top
+      behavior: "smooth",
+    });
+  }
+}
 
 function renderArticleReaderModeUIOverlay(content: string) {
   const sanitizedContent = DOMPurify.sanitize(content);
@@ -24,7 +41,7 @@ function renderArticleReaderModeUIOverlay(content: string) {
 
   readerModeOverlay.id = "article-reader-overlay";
   /* Prevent background scrolling when overlay is active */
-  document.body.style.overflow = "hidden";
+  //   document.body.style.overflow = "hidden";
 
   const articleContainer = document.createElement("div");
   Object.assign(articleContainer.style, {
@@ -85,10 +102,56 @@ Object.assign(mainHeader.style, {
   fontWeight: "bold",
   fontSize: "18px",
   color: "black",
-  margin: "10px 0 15px 0",
+  marginTop: "10px",
 });
 
 mainHeader.textContent = "Skimble Reader Widget";
+
+const toggleDiv = document.createElement("div");
+toggleDiv.textContent = "Toggle Reader Mode";
+
+// use Object.assign for cleaner style application
+Object.assign(toggleDiv.style, {
+  cursor: "pointer",
+  padding: "5px",
+  border: "1px solid #ccc",
+  display: "inline-block",
+  backgroundColor: "#f0f0f0", // make a little more darker
+  borderRadius: "6px",
+  userSelect: "none",
+});
+
+// update UI based on state
+function renderToggle() {
+  toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
+
+  if (readerMode) {
+    const documentClone = document.cloneNode(true) as Document;
+    const article = new Readability(documentClone).parse();
+    if (article && article.content)
+      renderArticleReaderModeUIOverlay(article.content);
+
+    return;
+  }
+
+  document.querySelector("#article-reader-overlay")?.remove();
+  document.body.classList.toggle("reader-mode", readerMode);
+}
+
+// toggle behavior
+toggleDiv.addEventListener("click", () => {
+  readerMode = !readerMode;
+  renderToggle();
+});
+
+Object.assign(toggleDiv.style, {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  margin: "5px 0 10px 0",
+});
+
+toggleDiv.appendChild(mainHeader);
 
 // --- Bottom Header / Drag Handle ---
 const header = document.createElement("div");
@@ -110,6 +173,7 @@ header.appendChild(tocHeader);
 // --- Assemble ---
 headerContainer.appendChild(mainHeader);
 headerContainer.appendChild(header);
+headerContainer.appendChild(toggleDiv);
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
@@ -219,11 +283,6 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
-  const documentClone = document.cloneNode(true) as Document;
-  const article = new Readability(documentClone).parse();
-  if (article && article.content)
-    renderArticleReaderModeUIOverlay(article.content);
-
   tableOfContentsDiv.appendChild(tableOfContentsListContainer);
   document.body.appendChild(tableOfContentsDiv);
 
@@ -232,6 +291,7 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
     if (tag.textContent?.trim()) {
       const listItem = document.createElement("li");
+      listItem.id = "tocListItem";
       listItem.style.marginBottom = "8px";
       const link = document.createElement("a");
       if (!tag.id) return;
@@ -248,24 +308,7 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
       listItem.appendChild(link);
       tableOfContentsListContainer.appendChild(listItem);
 
-      listItem.addEventListener("click", (e) => {
-        e.preventDefault();
-
-        const overlay = document.getElementById("article-reader-overlay");
-        // Find the header inside the overlay article container
-        const articleContainer = overlay?.querySelector("div");
-        const targetInOverlay = articleContainer?.querySelector(
-          `[id="${tag.id}"]`,
-        );
-
-        if (overlay && targetInOverlay) {
-          // OffsetTop is relative to the parent; scroll the overlay directly
-          overlay.scrollTo({
-            top: (targetInOverlay as HTMLElement).offsetTop - 20, // 20px padding from the top
-            behavior: "smooth",
-          });
-        }
-      });
+      listItem.addEventListener("click", (e) => anchorClickHandler(e, tag.id));
     }
   });
 }
