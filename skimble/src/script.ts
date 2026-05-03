@@ -175,6 +175,13 @@ headerContainer.appendChild(mainHeader);
 headerContainer.appendChild(header);
 headerContainer.appendChild(toggleDiv);
 
+// --- Button Container (groups both buttons) ---
+const buttonGroup = document.createElement("div");
+Object.assign(buttonGroup.style, {
+  display: "flex",
+  marginLeft: "auto", // pushes group to the right side
+});
+
 // -- Close Button ---
 const closeBtn = document.createElement("button");
 closeBtn.textContent = "×";
@@ -191,7 +198,7 @@ Object.assign(closeBtn.style, {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  marginLeft: "60px",
+  marginRight: "4px",
 });
 
 closeBtn.onclick = () => {
@@ -205,7 +212,6 @@ closeBtn.onclick = () => {
 // --- Collapse Button ---
 const collapseBtn = document.createElement("button");
 collapseBtn.textContent = "-";
-
 Object.assign(collapseBtn.style, {
   border: "none",
   background: "#eee",
@@ -219,6 +225,19 @@ Object.assign(collapseBtn.style, {
   alignItems: "center",
   justifyContent: "center",
 });
+
+// Add buttons to group
+buttonGroup.appendChild(collapseBtn);
+buttonGroup.appendChild(closeBtn);
+
+// Make sure header is flex
+Object.assign(header.style, {
+  display: "flex",
+  alignItems: "center",
+});
+
+// Append group to header
+header.appendChild(buttonGroup);
 
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
