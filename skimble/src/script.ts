@@ -1,9 +1,67 @@
+import { Readability } from "@mozilla/readability";
 import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
+import DOMPurify from "dompurify";
+
+// TODO - need to make all the links black when isArticleReaderModeActive is true
+let readerMode = false;
+
+function anchorClickHandler(e: MouseEvent, id: string) {
+  const overlay = document.querySelector("#article-reader-overlay");
+  // Find the header inside the overlay article container
+  const articleContainer = overlay?.querySelector("div");
+  const targetInOverlay = articleContainer?.querySelector(`[id="${id}"]`);
+
+  if (overlay && targetInOverlay) {
+    e.preventDefault();
+
+    // OffsetTop is relative to the parent; scroll the overlay directly
+    overlay.scrollTo({
+      top: (targetInOverlay as HTMLElement).offsetTop - 20, // 20px padding from the top
+      behavior: "smooth",
+    });
+  }
+}
+
+function renderArticleReaderModeUIOverlay(content: string) {
+  const sanitizedContent = DOMPurify.sanitize(content);
+
+  const readerModeOverlay = document.createElement("div");
+  Object.assign(readerModeOverlay.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#ffffff",
+    zIndex: "999998",
+    overflowY: "scroll",
+    padding: "40px 20px",
+    boxSizing: "border-box",
+  });
+
+  readerModeOverlay.id = "article-reader-overlay";
+  /* Prevent background scrolling when overlay is active */
+  //   document.body.style.overflow = "hidden";
+
+  const articleContainer = document.createElement("div");
+  Object.assign(articleContainer.style, {
+    maxWidth: "800px",
+    margin: "0 auto",
+    fontSize: "18px",
+    lineHeight: "1.6",
+    color: "#000000",
+  });
+
+  articleContainer.innerHTML = sanitizedContent;
+  readerModeOverlay.appendChild(articleContainer);
+  document.body.appendChild(readerModeOverlay);
+}
 
 function init(): NodeListOf<Element> {
   const mainContent = document.querySelector("main");
   if (mainContent) {
     const mainTags = mainContent.querySelectorAll("h1, h2, h3");
+
     if (mainTags.length > 0) return mainTags;
   }
   const tags = document.querySelectorAll("h1, h2, h3");
@@ -29,7 +87,73 @@ Object.assign(tableOfContentsDiv.style, {
   userSelect: "none",
 });
 
-// --- Header / Drag Handle ---
+// --- Container (stacks headers vertically) ---
+const headerContainer = document.createElement("div");
+Object.assign(headerContainer.style, {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+});
+
+// --- Top Header ---
+const mainHeader = document.createElement("div");
+Object.assign(mainHeader.style, {
+  textAlign: "center",
+  fontWeight: "bold",
+  fontSize: "18px",
+  color: "black",
+  marginTop: "10px",
+});
+
+mainHeader.textContent = "Skimble Reader Widget";
+
+const toggleDiv = document.createElement("div");
+toggleDiv.textContent = "Toggle Reader Mode";
+
+// use Object.assign for cleaner style application
+Object.assign(toggleDiv.style, {
+  cursor: "pointer",
+  padding: "5px",
+  border: "1px solid #ccc",
+  display: "inline-block",
+  backgroundColor: "#f0f0f0", // make a little more darker
+  borderRadius: "6px",
+  userSelect: "none",
+});
+
+// update UI based on state
+function renderToggle() {
+  toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
+
+  if (readerMode) {
+    const documentClone = document.cloneNode(true) as Document;
+    const article = new Readability(documentClone).parse();
+    if (article && article.content)
+      renderArticleReaderModeUIOverlay(article.content);
+
+    return;
+  }
+
+  document.querySelector("#article-reader-overlay")?.remove();
+  document.body.classList.toggle("reader-mode", readerMode);
+}
+
+// toggle behavior
+toggleDiv.addEventListener("click", () => {
+  readerMode = !readerMode;
+  renderToggle();
+});
+
+Object.assign(toggleDiv.style, {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  margin: "5px 0 10px 0",
+});
+
+toggleDiv.appendChild(mainHeader);
+
+// --- Bottom Header / Drag Handle ---
 const header = document.createElement("div");
 Object.assign(header.style, {
   cursor: "move",
@@ -38,18 +162,32 @@ Object.assign(header.style, {
   alignItems: "center",
   paddingBottom: "5px",
   borderBottom: "1px solid #eee",
+  color: "black",
 });
 
-const title = document.createElement("strong");
-title.textContent = "⠿ Contents";
-header.appendChild(title);
+const tocHeader = document.createElement("strong");
+tocHeader.textContent = "⠿ Contents";
+
+header.appendChild(tocHeader);
+
+// --- Assemble ---
+headerContainer.appendChild(mainHeader);
+headerContainer.appendChild(header);
+headerContainer.appendChild(toggleDiv);
+
+// --- Button Container (groups both buttons) ---
+const buttonGroup = document.createElement("div");
+Object.assign(buttonGroup.style, {
+  display: "flex",
+  marginLeft: "auto", // pushes group to the right side
+});
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
-closeBtn.textContent = "×"; // Multiplication sign (close icon)
+closeBtn.textContent = "×";
 Object.assign(closeBtn.style, {
   border: "none",
-  background: "#ff4d4d", // light red background for close button
+  background: "#ff4d4d",
   borderRadius: "4px",
   color: "#fff",
   width: "24px",
@@ -60,12 +198,12 @@ Object.assign(closeBtn.style, {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  marginLeft: "60px",
+  marginRight: "4px",
 });
 
 closeBtn.onclick = () => {
   const confirmation = confirm(
-    "Are you sure you want to close the table of contents? You can always reopen it by refreshing the page.",
+    "Are you sure you want to hide the widget? You can always reopen it by refreshing the page.",
   );
   if (!confirmation) return;
   tableOfContentsDiv.remove();
@@ -73,7 +211,7 @@ closeBtn.onclick = () => {
 
 // --- Collapse Button ---
 const collapseBtn = document.createElement("button");
-collapseBtn.textContent = "-"; // Minus sign
+collapseBtn.textContent = "-";
 Object.assign(collapseBtn.style, {
   border: "none",
   background: "#eee",
@@ -88,12 +226,27 @@ Object.assign(collapseBtn.style, {
   justifyContent: "center",
 });
 
+// Add buttons to group
+buttonGroup.appendChild(collapseBtn);
+buttonGroup.appendChild(closeBtn);
+
+// Make sure header is flex
+Object.assign(header.style, {
+  display: "flex",
+  alignItems: "center",
+});
+
+// Append group to header
+header.appendChild(buttonGroup);
+
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
+tableOfContentsDiv.appendChild(headerContainer);
 tableOfContentsDiv.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
 tableOfContentsListContainer.id = "table-of-contents-list";
+
 Object.assign(tableOfContentsListContainer.style, {
   padding: "10px 0 0 20px",
   margin: "0",
@@ -144,7 +297,6 @@ document.addEventListener("mouseup", () => {
   isDragging = false;
 });
 
-// --- Build Function ---
 function buildTableOfContents(tags: NodeListOf<Element>) {
   tableOfContentsListContainer.innerHTML = "";
 
@@ -158,17 +310,24 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
     if (tag.textContent?.trim()) {
       const listItem = document.createElement("li");
+      listItem.id = "tocListItem";
       listItem.style.marginBottom = "8px";
       const link = document.createElement("a");
-      link.href = tag.id ? `#${tag.id}` : "javascript:void(0)";
+      if (!tag.id) return;
+
+      link.href = `#${tag.id}`;
       link.textContent = tag.textContent.trim();
+
       Object.assign(link.style, {
         color: "#007bff",
         textDecoration: "none",
         fontSize: "13px",
       });
+
       listItem.appendChild(link);
       tableOfContentsListContainer.appendChild(listItem);
+
+      listItem.addEventListener("click", (e) => anchorClickHandler(e, tag.id));
     }
   });
 }
