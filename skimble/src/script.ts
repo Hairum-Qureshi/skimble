@@ -358,9 +358,10 @@ function renderToggle() {
   toggleDiv.setAttribute("aria-pressed", readerMode.toString());
 
   // Check if the text container already exists, otherwise create it
-  let readingRulerTextContainer = document.querySelector(
+  let readingRulerTextContainer = shadowRoot.querySelector(
     "#reading-ruler-info",
   ) as HTMLElement;
+
   if (!readingRulerTextContainer) {
     readingRulerTextContainer = document.createElement("div");
     readingRulerTextContainer.id = "reading-ruler-info";
@@ -373,12 +374,11 @@ function renderToggle() {
     headerContainer.appendChild(readingRulerTextContainer);
   }
 
-  // Update text based on state
-  readingRulerTextContainer.textContent = readerMode
-    ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
-    : "Activate reader mode to show the reading ruler and/or view your last saved reading position.";
-
   if (readerMode) {
+    // Update text based on state
+    readingRulerTextContainer.textContent = readerMode
+      ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
+      : "Activate reader mode to show the reading ruler and/or view your last saved reading position.";
     const documentClone = document.cloneNode(true) as Document;
     const article = new Readability(documentClone).parse();
     if (article && article.content) {
@@ -386,7 +386,7 @@ function renderToggle() {
       headerContainer.appendChild(controlsContainer);
     }
   } else {
-    document.querySelector("#article-reader-overlay")?.remove();
+    shadowRoot.querySelector("#article-reader-overlay")?.remove();
     headerContainer.removeChild(controlsContainer);
   }
 
