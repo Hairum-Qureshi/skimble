@@ -55,6 +55,75 @@ function renderArticleReaderModeUIOverlay(content: string) {
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
   document.body.appendChild(readerModeOverlay);
+
+  showReadingRuler();
+}
+
+function showReadingRuler() {
+  const overlay = document.querySelector(
+    "#article-reader-overlay",
+  ) as HTMLElement;
+  if (!overlay || document.getElementById("reading-ruler")) return;
+
+  const readingRuler = document.createElement("div");
+  readingRuler.id = "reading-ruler";
+
+  Object.assign(readingRuler.style, {
+    position: "fixed",
+    left: "0",
+    width: "100%",
+    height: "30px",
+    backgroundColor: "rgba(255, 255, 0, 0.3)",
+    pointerEvents: "none",
+    zIndex: "999999",
+    borderTop: "2px solid black",
+    borderBottom: "2px solid black",
+  });
+
+  overlay.appendChild(readingRuler);
+
+  let savedRulerPos = localStorage.getItem("readingRulerPosition");
+  let isLocked = !!savedRulerPos;
+
+  if (isLocked && savedRulerPos) {
+    readingRuler.style.position = "absolute";
+    readingRuler.style.top = savedRulerPos + "px";
+    readingRuler.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
+
+    setTimeout(() => {
+      overlay.scrollTo({
+        top: parseFloat(savedRulerPos!) - overlay.clientHeight / 2,
+        behavior: "smooth",
+      });
+    }, 100);
+  }
+
+  overlay.addEventListener("mousemove", (e) => {
+    if (!isLocked) readingRuler.style.top = e.clientY - 15 + "px";
+  });
+
+  // 3. Toggle Logic
+  overlay.addEventListener("dblclick", (e) => {
+    if (!isLocked) {
+      // LOCKING
+      const finalY = e.clientY + overlay.scrollTop - 15;
+
+      isLocked = true;
+      readingRuler.style.position = "absolute";
+      readingRuler.style.top = finalY + "px";
+      readingRuler.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
+
+      localStorage.setItem("readingRulerPosition", finalY.toString());
+    } else {
+      // UNLOCKING
+      isLocked = false;
+      readingRuler.style.position = "fixed";
+      readingRuler.style.top = e.clientY - 15 + "px";
+      readingRuler.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+
+      localStorage.removeItem("readingRulerPosition");
+    }
+  });
 }
 
 function init(): NodeListOf<Element> {
@@ -126,16 +195,37 @@ Object.assign(toggleDiv.style, {
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
 
+  // Check if the text container already exists, otherwise create it
+  let readingRulerTextContainer = document.querySelector(
+    "#reading-ruler-info",
+  ) as HTMLElement;
+  if (!readingRulerTextContainer) {
+    readingRulerTextContainer = document.createElement("div");
+    readingRulerTextContainer.id = "reading-ruler-info";
+    Object.assign(readingRulerTextContainer.style, {
+      fontSize: "13px",
+      color: "#555",
+      marginBottom: "10px",
+      lineHeight: "1.4",
+    });
+    headerContainer.appendChild(readingRulerTextContainer);
+  }
+
+  // Update text based on state
+  readingRulerTextContainer.textContent = readerMode
+    ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
+    : "Activate reader mode to show the reading ruler and/or view your last saved position.";
+
   if (readerMode) {
     const documentClone = document.cloneNode(true) as Document;
     const article = new Readability(documentClone).parse();
-    if (article && article.content)
+    if (article && article.content) {
       renderArticleReaderModeUIOverlay(article.content);
-
-    return;
+    }
+  } else {
+    document.querySelector("#article-reader-overlay")?.remove();
   }
 
-  document.querySelector("#article-reader-overlay")?.remove();
   document.body.classList.toggle("reader-mode", readerMode);
 }
 
@@ -172,8 +262,8 @@ tocHeader.textContent = "Contents";
 header.appendChild(tocHeader);
 
 // --- Assemble ---
-headerContainer.appendChild(mainHeader);
-headerContainer.appendChild(header);
+headerContainer.appendChild(mainHeader); // Title
+headerContainer.appendChild(header); // Contents & Buttons
 headerContainer.appendChild(toggleDiv);
 
 // --- Button Container (groups both buttons) ---
