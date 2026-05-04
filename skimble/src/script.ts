@@ -8,7 +8,8 @@ import { Summarizer } from "ts-summarizer";
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons
 // TODO - add a 'jump to reading bar' button
-// TODO - if reader mode is on, make the opacity of the background darker
+// ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
+// ! - on reader mode, the slider logic doesn't seem to be working anymore
 
 const host = document.createElement("div");
 host.id = "skimble-root";
@@ -22,7 +23,6 @@ document.body.appendChild(host);
 // NOW mount your widget inside shadow root instead
 
 let readerMode = false;
-
 function anchorClickHandler(e: MouseEvent, id: string) {
   const overlay = shadowRoot.querySelector("#article-reader-overlay");
   // Find the header inside the overlay article container
@@ -166,7 +166,7 @@ Object.assign(widgetContainer.style, {
   position: "fixed",
   top: "20px",
   right: "20px",
-  width: "250px",
+  width: "22%",
   backgroundColor: "#ffffff",
   border: "1px solid #ccc",
   borderRadius: "8px",
@@ -353,16 +353,50 @@ letterSpacing.slider.addEventListener("input", updateStyles);
 fontSize.slider.addEventListener("input", updateStyles);
 wordSpacing.slider.addEventListener("input", updateStyles);
 
-// update UI based on state
+// Add this helper function to manage the dimming consistently
+function updateBackdropDimming() {
+  const overlay = shadowRoot.querySelector(
+    "#article-reader-overlay",
+  ) as HTMLElement;
+  const host = shadowRoot.host as HTMLElement;
+
+  if (modalOpen) {
+    // If modal is open, dim the background
+    host.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    host.style.position = "fixed";
+    host.style.top = "0";
+    host.style.left = "0";
+    host.style.width = "100%";
+    host.style.height = "100%";
+    host.style.zIndex = "999999";
+
+    if (overlay) {
+      // If reader mode is ALSO on, dim the white reader overlay
+      overlay.style.background =
+        "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), #ffffff";
+    }
+  } else {
+    // If modal is closed, remove dimming
+    host.style.backgroundColor = "transparent";
+    // Important: Reset pointer events so user can click the page again
+    host.style.position = "static";
+    host.style.width = "auto";
+    host.style.height = "auto";
+
+    if (overlay) {
+      overlay.style.background = "#ffffff";
+    }
+  }
+}
+
+// --- UPDATED renderToggle ---
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
   toggleDiv.setAttribute("aria-pressed", readerMode.toString());
 
-  // Check if the text container already exists, otherwise create it
   let readingRulerTextContainer = shadowRoot.querySelector(
     "#reading-ruler-info",
   ) as HTMLElement;
-
   if (!readingRulerTextContainer) {
     readingRulerTextContainer = document.createElement("div");
     readingRulerTextContainer.id = "reading-ruler-info";
@@ -376,10 +410,8 @@ function renderToggle() {
   }
 
   if (readerMode) {
-    // Update text based on state
-    readingRulerTextContainer.textContent = readerMode
-      ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
-      : "Activate reader mode to show the reading ruler and/or view your last saved reading position.";
+    readingRulerTextContainer.textContent =
+      "Double-click to lock/unlock the reading ruler...";
     const documentClone = document.cloneNode(true) as Document;
     const article = new Readability(documentClone).parse();
     if (article && article.content) {
@@ -388,9 +420,13 @@ function renderToggle() {
     }
   } else {
     shadowRoot.querySelector("#article-reader-overlay")?.remove();
-    headerContainer.removeChild(controlsContainer);
+    if (headerContainer.contains(controlsContainer)) {
+      headerContainer.removeChild(controlsContainer);
+    }
   }
 
+  // CRITICAL: Update dimming every time reader mode is toggled
+  updateBackdropDimming();
   shadowRoot.host.classList.toggle("reader-mode", readerMode);
 }
 
@@ -680,8 +716,13 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
 let modalOpen = false;
 shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
-  // open a modal
   if (modalOpen) return;
+
+  // Inside shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", ...
+  // Replace the manual "Background overlay" code block with:
+  modalOpen = true;
+  updateBackdropDimming();
+
   const modalContainer = document.createElement("div");
   Object.assign(modalContainer.style, {
     position: "fixed",
@@ -694,8 +735,8 @@ shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
     backgroundColor: "#ffffff",
     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
     zIndex: "1000000",
-    width: "50%",
-    maxHeight: "30%",
+    width: "60%", // Slightly wider to accommodate side-by-side layout
+    maxHeight: "50%", // Increased height for better visibility
     overflowY: "auto",
   });
 
@@ -703,22 +744,22 @@ shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
   modalHeader.textContent = "Article Summary";
   Object.assign(modalHeader.style, {
     marginTop: "0",
-    marginBottom: "10px",
+    marginBottom: "20px",
     color: "#111827",
   });
 
-  // set the shadow root background color and set it to the entire screen
-  Object.assign((shadowRoot.host as HTMLElement).style, {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100%",
-    height: "100%",
+  // --- NEW: Content Wrapper to hold text and sliders side-by-side ---
+  const contentWrapper = document.createElement("div");
+  Object.assign(contentWrapper.style, {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: "999999",
+    flexDirection: "row",
+    gap: "20px", // Spacing between text and sliders
+    alignItems: "flex-start",
+  });
+
+  const textContainer = document.createElement("div");
+  Object.assign(textContainer.style, {
+    flex: "1", // Take up proportional space
   });
 
   const summaryText = document.createElement("p");
@@ -727,12 +768,22 @@ shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
     color: "#4b5563",
     fontSize: "14px",
     lineHeight: "1.5",
+    margin: "0",
   });
 
-  // add a close button to the right of the modal header
+  const slidersContainer = controlsContainer.cloneNode(true) as HTMLElement;
+  Object.assign(slidersContainer.style, {
+    flex: "1", // Take up proportional space
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  });
+
   const closeBtn = document.createElement("button");
-  closeBtn.textContent = "×";
   Object.assign(closeBtn.style, {
+    position: "absolute",
+    top: "10px",
+    right: "10px",
     border: "none",
     background: "#ff4d4d",
     borderRadius: "4px",
@@ -745,25 +796,57 @@ shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    position: "absolute",
-    top: "10px",
-    right: "10px",
   });
+  closeBtn.textContent = "×";
 
   closeBtn.onclick = () => {
-    (shadowRoot.host as HTMLElement).style.backgroundColor = "transparent";
     modalContainer.remove();
-    modalOpen = false;
+    modalOpen = false; // Set this first
+    updateBackdropDimming(); // Then refresh UI
   };
 
-  modalContainer.appendChild(closeBtn);
+  // make the slider adjust the summary text in real-time
+  const lineSpacingSlider = slidersContainer.querySelector(
+    "#line-height-input",
+  ) as HTMLInputElement;
+  const letterSpacingSlider = slidersContainer.querySelector(
+    "#letter-spacing-input",
+  ) as HTMLInputElement;
+  const fontSizeSlider = slidersContainer.querySelector(
+    "#font-size-input",
+  ) as HTMLInputElement;
+  const wordSpacingSlider = slidersContainer.querySelector(
+    "#word-spacing-input",
+  ) as HTMLInputElement;
 
+  lineSpacingSlider.addEventListener("input", () => {
+    summaryText.style.lineHeight = lineSpacingSlider.value;
+  });
+
+  letterSpacingSlider.addEventListener("input", () => {
+    summaryText.style.letterSpacing = letterSpacingSlider.value + "em";
+  });
+
+  fontSizeSlider.addEventListener("input", () => {
+    summaryText.style.fontSize = fontSizeSlider.value + "px";
+  });
+
+  wordSpacingSlider.addEventListener("input", () => {
+    summaryText.style.wordSpacing = wordSpacingSlider.value + "em";
+  });
+
+  // Assembly
+  textContainer.appendChild(summaryText);
+
+  // Append containers to the horizontal wrapper
+  contentWrapper.appendChild(textContainer);
+  contentWrapper.appendChild(slidersContainer);
+
+  modalContainer.appendChild(closeBtn);
   modalContainer.appendChild(modalHeader);
-  modalContainer.appendChild(summaryText);
+  modalContainer.appendChild(contentWrapper); // Add the wrapper to the modal
 
   shadowRoot.appendChild(modalContainer);
-
-  modalOpen = true;
 });
 
 if (document.readyState === "complete") {
