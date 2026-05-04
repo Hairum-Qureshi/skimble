@@ -1,11 +1,13 @@
 import { Readability } from "@mozilla/readability";
 import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
+import { Summarizer } from "ts-summarizer";
 
 // TODO - need to make all the links black when isArticleReaderModeActive is true
 // TODO - need to reset the slider values when reader mode is toggled off
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons
+// TODO - fix width of summary container
 
 let readerMode = false;
 
@@ -423,9 +425,12 @@ Object.assign(summaryContainer.style, {
   padding: "12px 14px",
   maxHeight: "140px",
   overflowY: "auto",
-  width: "100%",
   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
   lineHeight: "1.5",
+  width: "100%",
+  boxSizing: "border-box",
+  wordWrap: "break-word",
+  overflowWrap: "break-word",
 });
 
 summaryContainer.innerHTML = `
@@ -441,10 +446,9 @@ summaryContainer.innerHTML = `
     margin: -5px 0 5px 0;
     color: #4b5563;
   ">
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    ${getArticleSummary()}
   </p>
   <p style = "color: #4b5563; font-style: italic; font-size: 11px;"><span style = "font-style: normal;">ⓘ</span> Please note that this AI-free summary has been generated automatically and may be inaccurate or incomplete.</p>
-  
 `;
 
 // --- Assemble ---
@@ -459,6 +463,22 @@ Object.assign(buttonGroup.style, {
   display: "flex",
   marginLeft: "auto", // pushes group to the right side
 });
+
+function getArticleSummary() {
+  const documentClone = document.cloneNode(true) as Document;
+  const article = new Readability(documentClone).parse();
+  const summary = Summarizer.summarize(
+    DOMPurify.sanitize(article?.textContent || "No content to summarize"),
+    0.5, // Summarize to 50% of original length
+    5, // Maximum of 5 sentences
+    {
+      deduplicateSimilar: true, // Remove similar sentences
+      favorPositionScore: true, // Prioritize intro/conclusion sentences
+    },
+  );
+
+  return summary;
+}
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
