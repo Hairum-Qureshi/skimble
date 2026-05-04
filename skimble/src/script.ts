@@ -157,6 +157,8 @@ Object.assign(tableOfContentsDiv.style, {
   fontFamily: "sans-serif",
   userSelect: "none",
   color: "black",
+  maxHeight: "80vh",
+  overflowY: "auto",
 });
 
 // --- Container (stacks headers vertically) ---
