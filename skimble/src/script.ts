@@ -8,6 +8,7 @@ import { Summarizer } from "ts-summarizer";
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons
 // TODO - add a 'jump to reading bar' button
+// TODO - if reader mode is on, make the opacity of the background darker
 
 const host = document.createElement("div");
 host.id = "skimble-root";
@@ -455,7 +456,7 @@ summaryContainer.innerHTML = `
     color: #111827;
   ">
     Article Summary
-    <button style="
+    <button id="open-summary-btn" style="
       margin-left: auto;
       font-size: 13px;
       font-weight: bold;
@@ -470,11 +471,11 @@ summaryContainer.innerHTML = `
       background-color: #f3f4f6;
       cursor: pointer;
       transition: all 0.2s ease;
-    " onmouseover="this.style.backgroundColor='#e5e7eb'" 
-       onmouseout="this.style.backgroundColor='#f3f4f6'"
-       aria-label="Open Summary Window Button"
-         title="Open Summary Window"
-       >
+    "
+    onmouseover="this.style.backgroundColor='#e5e7eb'" 
+    onmouseout="this.style.backgroundColor='#f3f4f6'"
+    aria-label="Open Summary Window Button"
+    title="Open Summary Window">
       ↗
     </button>
   </h2>
@@ -676,6 +677,94 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
     }
   });
 }
+
+let modalOpen = false;
+shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
+  // open a modal
+  if (modalOpen) return;
+  const modalContainer = document.createElement("div");
+  Object.assign(modalContainer.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "20px",
+    backgroundColor: "#ffffff",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: "1000000",
+    width: "50%",
+    maxHeight: "30%",
+    overflowY: "auto",
+  });
+
+  const modalHeader = document.createElement("h2");
+  modalHeader.textContent = "Article Summary";
+  Object.assign(modalHeader.style, {
+    marginTop: "0",
+    marginBottom: "10px",
+    color: "#111827",
+  });
+
+  // set the shadow root background color and set it to the entire screen
+  Object.assign((shadowRoot.host as HTMLElement).style, {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "999999",
+  });
+
+  const summaryText = document.createElement("p");
+  summaryText.textContent = getArticleSummary();
+  Object.assign(summaryText.style, {
+    color: "#4b5563",
+    fontSize: "14px",
+    lineHeight: "1.5",
+  });
+
+  // add a close button to the right of the modal header
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "×";
+  Object.assign(closeBtn.style, {
+    border: "none",
+    background: "#ff4d4d",
+    borderRadius: "4px",
+    color: "#fff",
+    width: "24px",
+    height: "24px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "bold",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "absolute",
+    top: "10px",
+    right: "10px",
+  });
+
+  closeBtn.onclick = () => {
+    (shadowRoot.host as HTMLElement).style.backgroundColor = "transparent";
+    modalContainer.remove();
+    modalOpen = false;
+  };
+
+  modalContainer.appendChild(closeBtn);
+
+  modalContainer.appendChild(modalHeader);
+  modalContainer.appendChild(summaryText);
+
+  shadowRoot.appendChild(modalContainer);
+
+  modalOpen = true;
+});
 
 if (document.readyState === "complete") {
   buildTableOfContents(init());
