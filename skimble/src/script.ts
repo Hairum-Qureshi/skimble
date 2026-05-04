@@ -191,6 +191,113 @@ Object.assign(toggleDiv.style, {
   userSelect: "none",
 });
 
+// --- Spacing Controls Container ---
+const controlsContainer = document.createElement("div");
+Object.assign(controlsContainer.style, {
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  marginTop: "10px",
+  padding: "10px",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "6px",
+  border: "1px solid #ddd",
+});
+
+// Helper function to create a labeled slider
+function createSlider(
+  label: string,
+  id: string,
+  min: string,
+  max: string,
+  step: string,
+  defaultValue: string,
+) {
+  const wrapper = document.createElement("div");
+  const labelEl = document.createElement("label");
+  labelEl.textContent = label;
+  Object.assign(labelEl.style, {
+    fontSize: "12px",
+    display: "block",
+    marginBottom: "4px",
+    fontWeight: "bold",
+  });
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.id = id;
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = defaultValue;
+  slider.style.width = "100%";
+
+  wrapper.appendChild(labelEl);
+  wrapper.appendChild(slider);
+  return { wrapper, slider };
+}
+
+// Create Line Spacing Slider
+const lineSpacing = createSlider(
+  "Line Spacing",
+  "line-height-input",
+  "1",
+  "3",
+  "0.1",
+  "1.6",
+);
+
+const wordSpacing = createSlider(
+  "Word Spacing",
+  "word-spacing-input",
+  "0",
+  "1",
+  "0.1",
+  "0",
+);
+
+controlsContainer.appendChild(wordSpacing.wrapper);
+controlsContainer.appendChild(lineSpacing.wrapper);
+
+const fontSize = createSlider(
+  "Font Size",
+  "font-size-input",
+  "12",
+  "36",
+  "1",
+  "18",
+);
+
+controlsContainer.appendChild(fontSize.wrapper);
+
+// Create Letter Spacing Slider
+const letterSpacing = createSlider(
+  "Letter Spacing",
+  "letter-spacing-input",
+  "0",
+  "0.5",
+  "0.01",
+  "0",
+);
+
+controlsContainer.appendChild(lineSpacing.wrapper);
+controlsContainer.appendChild(letterSpacing.wrapper);
+
+// --- Event Listeners to Update Styles ---
+const updateStyles = () => {
+  const overlay = document.querySelector("#article-reader-overlay");
+  const article = overlay?.querySelector("div"); // This targets your articleContainer
+
+  if (article) {
+    (article as HTMLElement).style.lineHeight = lineSpacing.slider.value;
+    (article as HTMLElement).style.letterSpacing =
+      letterSpacing.slider.value + "em";
+  }
+};
+
+lineSpacing.slider.addEventListener("input", updateStyles);
+letterSpacing.slider.addEventListener("input", updateStyles);
+
 // update UI based on state
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
@@ -264,6 +371,7 @@ header.appendChild(tocHeader);
 
 // --- Assemble ---
 headerContainer.appendChild(mainHeader); // Title
+headerContainer.appendChild(controlsContainer);
 headerContainer.appendChild(header); // Contents & Buttons
 headerContainer.appendChild(toggleDiv);
 
