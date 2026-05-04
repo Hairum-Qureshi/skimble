@@ -444,16 +444,41 @@ Object.assign(summaryContainer.style, {
   wordWrap: "break-word",
   overflowWrap: "break-word",
 });
-
+// align the arrow span to the right of the header
 summaryContainer.innerHTML = `
   <h2 style="
+    display: flex;
+    align-items: center;
     font-size: 16px;
     font-weight: 600;
     margin-top: -1px;
     color: #111827;
   ">
     Article Summary
+    <button style="
+      margin-left: auto;
+      font-size: 13px;
+      font-weight: bold;
+      border: 1px solid #111827;
+      border-radius: 6px;
+      padding: 2px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f3f4f6;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    " onmouseover="this.style.backgroundColor='#e5e7eb'" 
+       onmouseout="this.style.backgroundColor='#f3f4f6'"
+       aria-label="Open Summary Window Button"
+         title="Open Summary Window"
+       >
+      ↗
+    </button>
   </h2>
+
   <p style="
     margin: -5px 0 5px 0;
     color: #4b5563;
@@ -461,7 +486,15 @@ summaryContainer.innerHTML = `
   ">
     ${getArticleSummary()}
   </p>
-  <p style = "color: #4b5563; font-style: italic; font-size: 11px;"><span style = "font-style: normal;">ⓘ</span> Please note that this AI-free summary has been generated automatically and may be inaccurate or incomplete.</p>
+
+  <p style="
+    color: #4b5563;
+    font-style: italic;
+    font-size: 11px;
+  ">
+    <span style="font-style: normal;">ⓘ</span>
+    Please note that this AI-free summary has been generated automatically and may be inaccurate or incomplete.
+  </p>
 `;
 
 // --- Assemble ---
@@ -615,7 +648,7 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
   widgetContainer.appendChild(tableOfContentsListContainer);
-  shadowRoot.appendChild(widgetContainer);
+  document.body.appendChild(widgetContainer);
 
   tags.forEach((tag) => {
     if (isHeaderBlacklisted(tag.textContent || "")) return;
