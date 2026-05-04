@@ -55,6 +55,75 @@ function renderArticleReaderModeUIOverlay(content: string) {
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
   document.body.appendChild(readerModeOverlay);
+
+  showReadingRuler();
+}
+
+function showReadingRuler() {
+  const overlay = document.querySelector(
+    "#article-reader-overlay",
+  ) as HTMLElement;
+  if (!overlay || document.getElementById("reading-ruler")) return;
+
+  const readingRuler = document.createElement("div");
+  readingRuler.id = "reading-ruler";
+
+  Object.assign(readingRuler.style, {
+    position: "fixed",
+    left: "0",
+    width: "100%",
+    height: "30px",
+    backgroundColor: "rgba(255, 255, 0, 0.3)",
+    pointerEvents: "none",
+    zIndex: "999999",
+    borderTop: "2px solid black",
+    borderBottom: "2px solid black",
+  });
+
+  overlay.appendChild(readingRuler);
+
+  let savedRulerPos = localStorage.getItem("readingRulerPosition");
+  let isLocked = !!savedRulerPos;
+
+  if (isLocked && savedRulerPos) {
+    readingRuler.style.position = "absolute";
+    readingRuler.style.top = savedRulerPos + "px";
+    readingRuler.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
+
+    setTimeout(() => {
+      overlay.scrollTo({
+        top: parseFloat(savedRulerPos!) - overlay.clientHeight / 2,
+        behavior: "smooth",
+      });
+    }, 100);
+  }
+
+  overlay.addEventListener("mousemove", (e) => {
+    if (!isLocked) readingRuler.style.top = e.clientY - 15 + "px";
+  });
+
+  // 3. Toggle Logic
+  overlay.addEventListener("dblclick", (e) => {
+    if (!isLocked) {
+      // LOCKING
+      const finalY = e.clientY + overlay.scrollTop - 15;
+
+      isLocked = true;
+      readingRuler.style.position = "absolute";
+      readingRuler.style.top = finalY + "px";
+      readingRuler.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
+
+      localStorage.setItem("readingRulerPosition", finalY.toString());
+    } else {
+      // UNLOCKING
+      isLocked = false;
+      readingRuler.style.position = "fixed";
+      readingRuler.style.top = e.clientY - 15 + "px";
+      readingRuler.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+
+      localStorage.removeItem("readingRulerPosition");
+    }
+  });
 }
 
 function init(): NodeListOf<Element> {
