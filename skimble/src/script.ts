@@ -292,11 +292,16 @@ const updateStyles = () => {
     (article as HTMLElement).style.lineHeight = lineSpacing.slider.value;
     (article as HTMLElement).style.letterSpacing =
       letterSpacing.slider.value + "em";
+    (article as HTMLElement).style.fontSize = fontSize.slider.value + "px";
+    (article as HTMLElement).style.wordSpacing =
+      wordSpacing.slider.value + "em";
   }
 };
 
 lineSpacing.slider.addEventListener("input", updateStyles);
 letterSpacing.slider.addEventListener("input", updateStyles);
+fontSize.slider.addEventListener("input", updateStyles);
+wordSpacing.slider.addEventListener("input", updateStyles);
 
 // update UI based on state
 function renderToggle() {
