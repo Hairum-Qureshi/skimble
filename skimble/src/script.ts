@@ -3,6 +3,10 @@ import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
 
 // TODO - need to make all the links black when isArticleReaderModeActive is true
+// TODO - need to reset the slider values when reader mode is toggled off
+// TODO - move the close and collapse button all the way to the top right of the widget above the header
+// TODO - add aria labels to the collapse and close buttons
+
 let readerMode = false;
 
 function anchorClickHandler(e: MouseEvent, id: string) {
@@ -408,9 +412,43 @@ tocHeader.textContent = "Contents";
 
 header.appendChild(tocHeader);
 
+const summaryContainer = document.createElement("div");
+
+Object.assign(summaryContainer.style, {
+  fontSize: "14px",
+  color: "#333",
+  border: "1px solid #e5e7eb",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "8px",
+  padding: "12px 14px",
+  maxHeight: "140px",
+  overflowY: "auto",
+  width: "100%",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  lineHeight: "1.5",
+});
+
+summaryContainer.innerHTML = `
+  <h2 style="
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: #111827;
+  ">
+    Article Summary
+  </h2>
+  <p style="
+    margin: 0;
+    color: #4b5563;
+  ">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  </p>
+`;
+
 // --- Assemble ---
 headerContainer.appendChild(mainHeader); // Title
 headerContainer.appendChild(header); // Contents & Buttons
+headerContainer.appendChild(summaryContainer);
 headerContainer.appendChild(toggleDiv);
 
 // --- Button Container (groups both buttons) ---
