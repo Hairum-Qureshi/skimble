@@ -194,6 +194,7 @@ Object.assign(toggleDiv.style, {
 // update UI based on state
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
+  toggleDiv.setAttribute("aria-pressed", readerMode.toString());
 
   // Check if the text container already exists, otherwise create it
   let readingRulerTextContainer = document.querySelector(
