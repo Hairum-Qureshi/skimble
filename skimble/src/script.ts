@@ -197,7 +197,7 @@ Object.assign(controlsContainer.style, {
   display: "flex",
   flexDirection: "column",
   gap: "10px",
-  marginTop: "10px",
+  marginBottom: "10px",
   padding: "10px",
   backgroundColor: "#f9f9f9",
   borderRadius: "6px",
@@ -313,7 +313,7 @@ function renderToggle() {
     Object.assign(readingRulerTextContainer.style, {
       fontSize: "13px",
       color: "#555",
-      marginBottom: "10px",
+      marginBottom: "5px",
       lineHeight: "1.4",
     });
     headerContainer.appendChild(readingRulerTextContainer);
@@ -329,9 +329,11 @@ function renderToggle() {
     const article = new Readability(documentClone).parse();
     if (article && article.content) {
       renderArticleReaderModeUIOverlay(article.content);
+      headerContainer.appendChild(controlsContainer);
     }
   } else {
     document.querySelector("#article-reader-overlay")?.remove();
+    headerContainer.removeChild(controlsContainer);
   }
 
   document.body.classList.toggle("reader-mode", readerMode);
@@ -371,7 +373,6 @@ header.appendChild(tocHeader);
 
 // --- Assemble ---
 headerContainer.appendChild(mainHeader); // Title
-headerContainer.appendChild(controlsContainer);
 headerContainer.appendChild(header); // Contents & Buttons
 headerContainer.appendChild(toggleDiv);
 
