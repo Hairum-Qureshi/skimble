@@ -7,12 +7,23 @@ import { Summarizer } from "ts-summarizer";
 // TODO - need to reset the slider values when reader mode is toggled off
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons
-// TODO - fix width of summary container
+// TODO - add a 'jump to reading bar' button
+
+const host = document.createElement("div");
+host.id = "skimble-root";
+
+// attach shadow root
+const shadowRoot = host.attachShadow({ mode: "open" });
+
+// append host to page
+document.body.appendChild(host);
+
+// NOW mount your widget inside shadow root instead
 
 let readerMode = false;
 
 function anchorClickHandler(e: MouseEvent, id: string) {
-  const overlay = document.querySelector("#article-reader-overlay");
+  const overlay = shadowRoot.querySelector("#article-reader-overlay");
   // Find the header inside the overlay article container
   const articleContainer = overlay?.querySelector("div");
   const targetInOverlay = articleContainer?.querySelector(`[id="${id}"]`);
@@ -61,16 +72,16 @@ function renderArticleReaderModeUIOverlay(content: string) {
 
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
-  document.body.appendChild(readerModeOverlay);
+  shadowRoot.appendChild(readerModeOverlay);
 
   showReadingRuler();
 }
 
 function showReadingRuler() {
-  const overlay = document.querySelector(
+  const overlay = shadowRoot.querySelector(
     "#article-reader-overlay",
   ) as HTMLElement;
-  if (!overlay || document.getElementById("reading-ruler")) return;
+  if (!overlay || shadowRoot.getElementById("reading-ruler")) return;
 
   const readingRuler = document.createElement("div");
   readingRuler.id = "reading-ruler";
@@ -147,6 +158,7 @@ function init(): NodeListOf<Element> {
 
 const widgetContainer = document.createElement("div");
 widgetContainer.id = "widget-container";
+shadowRoot.appendChild(widgetContainer);
 
 // --- Styling the Container ---
 Object.assign(widgetContainer.style, {
@@ -378,7 +390,7 @@ function renderToggle() {
     headerContainer.removeChild(controlsContainer);
   }
 
-  document.body.classList.toggle("reader-mode", readerMode);
+  shadowRoot.host.classList.toggle("reader-mode", readerMode);
 }
 
 // toggle behavior
@@ -445,6 +457,7 @@ summaryContainer.innerHTML = `
   <p style="
     margin: -5px 0 5px 0;
     color: #4b5563;
+    font-size: 13px;
   ">
     ${getArticleSummary()}
   </p>
@@ -602,7 +615,7 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
   widgetContainer.appendChild(tableOfContentsListContainer);
-  document.body.appendChild(widgetContainer);
+  shadowRoot.appendChild(widgetContainer);
 
   tags.forEach((tag) => {
     if (isHeaderBlacklisted(tag.textContent || "")) return;
