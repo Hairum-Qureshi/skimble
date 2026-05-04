@@ -105,7 +105,8 @@ Object.assign(mainHeader.style, {
   marginTop: "10px",
 });
 
-mainHeader.textContent = "Skimble Reader Widget";
+mainHeader.textContent = "⠿ Skimble Reader Widget";
+mainHeader.style.cursor = "move";
 
 const toggleDiv = document.createElement("div");
 toggleDiv.textContent = "Toggle Reader Mode";
@@ -166,7 +167,7 @@ Object.assign(header.style, {
 });
 
 const tocHeader = document.createElement("strong");
-tocHeader.textContent = "⠿ Contents";
+tocHeader.textContent = "Contents";
 
 header.appendChild(tocHeader);
 
@@ -238,7 +239,6 @@ Object.assign(header.style, {
 
 // Append group to header
 header.appendChild(buttonGroup);
-
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
 tableOfContentsDiv.appendChild(headerContainer);
@@ -278,7 +278,7 @@ let isDragging = false;
 let offsetX = 0;
 let offsetY = 0;
 
-header.addEventListener("mousedown", (e) => {
+mainHeader.addEventListener("mousedown", (e) => {
   if (e.target === collapseBtn) return; // Don't drag if clicking the button
   isDragging = true;
   const rect = tableOfContentsDiv.getBoundingClientRect();
