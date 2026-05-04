@@ -35,6 +35,7 @@ function renderArticleReaderModeUIOverlay(content: string) {
     backgroundColor: "#ffffff",
     zIndex: "999998",
     overflowY: "scroll",
+    color: "black",
     padding: "40px 20px",
     boxSizing: "border-box",
   });
@@ -76,6 +77,7 @@ function showReadingRuler() {
     backgroundColor: "rgba(255, 255, 0, 0.3)",
     pointerEvents: "none",
     zIndex: "999999",
+    color: "black",
     borderTop: "2px solid black",
     borderBottom: "2px solid black",
   });
@@ -154,6 +156,7 @@ Object.assign(tableOfContentsDiv.style, {
   zIndex: "999999",
   fontFamily: "sans-serif",
   userSelect: "none",
+  color: "black",
 });
 
 // --- Container (stacks headers vertically) ---
@@ -188,6 +191,7 @@ Object.assign(toggleDiv.style, {
   display: "inline-block",
   backgroundColor: "#f0f0f0", // make a little more darker
   borderRadius: "6px",
+  color: "black",
   userSelect: "none",
 });
 
@@ -202,6 +206,7 @@ Object.assign(controlsContainer.style, {
   backgroundColor: "#f9f9f9",
   borderRadius: "6px",
   border: "1px solid #ddd",
+  color: "black",
 });
 
 // Helper function to create a labeled slider
@@ -379,6 +384,7 @@ Object.assign(toggleDiv.style, {
   alignItems: "center",
   justifyContent: "center",
   margin: "5px 0 10px 0",
+  color: "black",
 });
 
 toggleDiv.appendChild(mainHeader);
@@ -453,6 +459,7 @@ Object.assign(collapseBtn.style, {
   fontWeight: "bold",
   display: "flex",
   alignItems: "center",
+  color: "black",
   justifyContent: "center",
 });
 
@@ -479,6 +486,7 @@ tableOfContentsListContainer.id = "table-of-contents-list";
 Object.assign(tableOfContentsListContainer.style, {
   padding: "10px 0 0 20px",
   margin: "0",
+  color: "black",
   maxHeight: "70vh",
   overflowY: "auto",
   transition: "all 0.2s ease", // Smooth opening/closing
