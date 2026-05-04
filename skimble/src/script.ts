@@ -194,16 +194,37 @@ Object.assign(toggleDiv.style, {
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
 
+  // Check if the text container already exists, otherwise create it
+  let readingRulerTextContainer = document.querySelector(
+    "#reading-ruler-info",
+  ) as HTMLElement;
+  if (!readingRulerTextContainer) {
+    readingRulerTextContainer = document.createElement("div");
+    readingRulerTextContainer.id = "reading-ruler-info";
+    Object.assign(readingRulerTextContainer.style, {
+      fontSize: "13px",
+      color: "#555",
+      marginBottom: "10px",
+      lineHeight: "1.4",
+    });
+    headerContainer.appendChild(readingRulerTextContainer);
+  }
+
+  // Update text based on state
+  readingRulerTextContainer.textContent = readerMode
+    ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
+    : "Activate reader mode to show the reading ruler and/or view your last saved position.";
+
   if (readerMode) {
     const documentClone = document.cloneNode(true) as Document;
     const article = new Readability(documentClone).parse();
-    if (article && article.content)
+    if (article && article.content) {
       renderArticleReaderModeUIOverlay(article.content);
-
-    return;
+    }
+  } else {
+    document.querySelector("#article-reader-overlay")?.remove();
   }
 
-  document.querySelector("#article-reader-overlay")?.remove();
   document.body.classList.toggle("reader-mode", readerMode);
 }
 
@@ -240,8 +261,8 @@ tocHeader.textContent = "⠿ Contents";
 header.appendChild(tocHeader);
 
 // --- Assemble ---
-headerContainer.appendChild(mainHeader);
-headerContainer.appendChild(header);
+headerContainer.appendChild(mainHeader); // Title
+headerContainer.appendChild(header); // Contents & Buttons
 headerContainer.appendChild(toggleDiv);
 
 // --- Button Container (groups both buttons) ---
