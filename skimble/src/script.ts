@@ -364,7 +364,7 @@ function renderToggle() {
   // Update text based on state
   readingRulerTextContainer.textContent = readerMode
     ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
-    : "Activate reader mode to show the reading ruler and/or view your last saved position.";
+    : "Activate reader mode to show the reading ruler and/or view your last saved reading position.";
 
   if (readerMode) {
     const documentClone = document.cloneNode(true) as Document;
