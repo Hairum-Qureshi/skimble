@@ -432,17 +432,19 @@ summaryContainer.innerHTML = `
   <h2 style="
     font-size: 16px;
     font-weight: 600;
-    margin: 0 0 6px 0;
+    margin-top: -1px;
     color: #111827;
   ">
     Article Summary
   </h2>
   <p style="
-    margin: 0;
+    margin: -5px 0 5px 0;
     color: #4b5563;
   ">
     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
   </p>
+  <p style = "color: #4b5563; font-style: italic; font-size: 11px;"><span style = "font-style: normal;">ⓘ</span> Please note that this AI-free summary has been generated automatically and may be inaccurate or incomplete.</p>
+  
 `;
 
 // --- Assemble ---
