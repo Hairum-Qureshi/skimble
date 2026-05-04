@@ -215,7 +215,9 @@ function createSlider(
 ) {
   const wrapper = document.createElement("div");
   const labelEl = document.createElement("label");
-  labelEl.textContent = label;
+
+  labelEl.innerHTML = `${label}: <span id="${id}-value">${defaultValue}%</span>`;
+
   Object.assign(labelEl.style, {
     fontSize: "12px",
     display: "block",
@@ -295,6 +297,28 @@ const updateStyles = () => {
     (article as HTMLElement).style.fontSize = fontSize.slider.value + "px";
     (article as HTMLElement).style.wordSpacing =
       wordSpacing.slider.value + "em";
+
+    // update the percentage labels next to sliders
+    const lineHeightValue = document.getElementById(
+      "line-height-input-value",
+    ) as HTMLElement;
+    const letterSpacingValue = document.getElementById(
+      "letter-spacing-input-value",
+    ) as HTMLElement;
+    const fontSizeValue = document.getElementById(
+      "font-size-input-value",
+    ) as HTMLElement;
+    const wordSpacingValue = document.getElementById(
+      "word-spacing-input-value",
+    ) as HTMLElement;
+
+    if (lineHeightValue)
+      lineHeightValue.textContent = lineSpacing.slider.value + "x";
+    if (letterSpacingValue)
+      letterSpacingValue.textContent = letterSpacing.slider.value + "em";
+    if (fontSizeValue) fontSizeValue.textContent = fontSize.slider.value + "px";
+    if (wordSpacingValue)
+      wordSpacingValue.textContent = wordSpacing.slider.value + "em";
   }
 };
 
