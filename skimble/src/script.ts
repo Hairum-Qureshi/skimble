@@ -139,11 +139,11 @@ function init(): NodeListOf<Element> {
   return tags;
 }
 
-const tableOfContentsDiv = document.createElement("div");
-tableOfContentsDiv.id = "table-of-contents";
+const widgetContainer = document.createElement("div");
+widgetContainer.id = "widget-container";
 
 // --- Styling the Container ---
-Object.assign(tableOfContentsDiv.style, {
+Object.assign(widgetContainer.style, {
   position: "fixed",
   top: "20px",
   right: "20px",
@@ -444,7 +444,7 @@ closeBtn.onclick = () => {
     "Are you sure you want to hide the widget? You can always reopen it by refreshing the page.",
   );
   if (!confirmation) return;
-  tableOfContentsDiv.remove();
+  widgetContainer.remove();
 };
 
 // --- Collapse Button ---
@@ -479,8 +479,8 @@ Object.assign(header.style, {
 header.appendChild(buttonGroup);
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
-tableOfContentsDiv.appendChild(headerContainer);
-tableOfContentsDiv.appendChild(header);
+widgetContainer.appendChild(headerContainer);
+widgetContainer.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
 tableOfContentsListContainer.id = "table-of-contents-list";
@@ -508,7 +508,7 @@ collapseBtn.onclick = (e) => {
     tableOfContentsListContainer.style.display = "block";
     header.style.borderBottom = "1px solid #eee";
     collapseBtn.textContent = "-";
-    tableOfContentsDiv.style.width = "250px";
+    widgetContainer.style.width = "250px";
   }
 };
 
@@ -520,16 +520,16 @@ let offsetY = 0;
 mainHeader.addEventListener("mousedown", (e) => {
   if (e.target === collapseBtn) return; // Don't drag if clicking the button
   isDragging = true;
-  const rect = tableOfContentsDiv.getBoundingClientRect();
+  const rect = widgetContainer.getBoundingClientRect();
   offsetX = e.clientX - rect.left;
   offsetY = e.clientY - rect.top;
 });
 
 document.addEventListener("mousemove", (e) => {
   if (!isDragging) return;
-  tableOfContentsDiv.style.right = "auto";
-  tableOfContentsDiv.style.left = `${e.clientX - offsetX}px`;
-  tableOfContentsDiv.style.top = `${e.clientY - offsetY}px`;
+  widgetContainer.style.right = "auto";
+  widgetContainer.style.left = `${e.clientX - offsetX}px`;
+  widgetContainer.style.top = `${e.clientY - offsetY}px`;
 });
 
 document.addEventListener("mouseup", () => {
@@ -541,8 +541,8 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
-  tableOfContentsDiv.appendChild(tableOfContentsListContainer);
-  document.body.appendChild(tableOfContentsDiv);
+  widgetContainer.appendChild(tableOfContentsListContainer);
+  document.body.appendChild(widgetContainer);
 
   tags.forEach((tag) => {
     if (isHeaderBlacklisted(tag.textContent || "")) return;
