@@ -1,12 +1,30 @@
 import { Readability } from "@mozilla/readability";
 import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
+import { Summarizer } from "ts-summarizer";
 
 // TODO - need to make all the links black when isArticleReaderModeActive is true
-let readerMode = false;
+// TODO - need to reset the slider values when reader mode is toggled off
+// TODO - move the close and collapse button all the way to the top right of the widget above the header
+// TODO - add aria labels to the collapse and close buttons
+// TODO - add a 'jump to reading bar' button
+// ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
+// ! - on reader mode, the slider logic doesn't seem to be working anymore
 
+const host = document.createElement("div");
+host.id = "skimble-root";
+
+// attach shadow root
+const shadowRoot = host.attachShadow({ mode: "open" });
+
+// append host to page
+document.body.appendChild(host);
+
+// NOW mount your widget inside shadow root instead
+
+let readerMode = false;
 function anchorClickHandler(e: MouseEvent, id: string) {
-  const overlay = document.querySelector("#article-reader-overlay");
+  const overlay = shadowRoot.querySelector("#article-reader-overlay");
   // Find the header inside the overlay article container
   const articleContainer = overlay?.querySelector("div");
   const targetInOverlay = articleContainer?.querySelector(`[id="${id}"]`);
@@ -35,6 +53,7 @@ function renderArticleReaderModeUIOverlay(content: string) {
     backgroundColor: "#ffffff",
     zIndex: "999998",
     overflowY: "scroll",
+    color: "black",
     padding: "40px 20px",
     boxSizing: "border-box",
   });
@@ -54,16 +73,16 @@ function renderArticleReaderModeUIOverlay(content: string) {
 
   articleContainer.innerHTML = sanitizedContent;
   readerModeOverlay.appendChild(articleContainer);
-  document.body.appendChild(readerModeOverlay);
+  shadowRoot.appendChild(readerModeOverlay);
 
   showReadingRuler();
 }
 
 function showReadingRuler() {
-  const overlay = document.querySelector(
+  const overlay = shadowRoot.querySelector(
     "#article-reader-overlay",
   ) as HTMLElement;
-  if (!overlay || document.getElementById("reading-ruler")) return;
+  if (!overlay || shadowRoot.getElementById("reading-ruler")) return;
 
   const readingRuler = document.createElement("div");
   readingRuler.id = "reading-ruler";
@@ -76,6 +95,7 @@ function showReadingRuler() {
     backgroundColor: "rgba(255, 255, 0, 0.3)",
     pointerEvents: "none",
     zIndex: "999999",
+    color: "black",
     borderTop: "2px solid black",
     borderBottom: "2px solid black",
   });
@@ -137,15 +157,16 @@ function init(): NodeListOf<Element> {
   return tags;
 }
 
-const tableOfContentsDiv = document.createElement("div");
-tableOfContentsDiv.id = "table-of-contents";
+const widgetContainer = document.createElement("div");
+widgetContainer.id = "widget-container";
+shadowRoot.appendChild(widgetContainer);
 
 // --- Styling the Container ---
-Object.assign(tableOfContentsDiv.style, {
+Object.assign(widgetContainer.style, {
   position: "fixed",
   top: "20px",
   right: "20px",
-  width: "250px",
+  width: "22%",
   backgroundColor: "#ffffff",
   border: "1px solid #ccc",
   borderRadius: "8px",
@@ -154,6 +175,9 @@ Object.assign(tableOfContentsDiv.style, {
   zIndex: "999999",
   fontFamily: "sans-serif",
   userSelect: "none",
+  color: "black",
+  maxHeight: "80vh",
+  overflowY: "auto",
 });
 
 // --- Container (stacks headers vertically) ---
@@ -188,6 +212,7 @@ Object.assign(toggleDiv.style, {
   display: "inline-block",
   backgroundColor: "#f0f0f0", // make a little more darker
   borderRadius: "6px",
+  color: "black",
   userSelect: "none",
 });
 
@@ -202,6 +227,7 @@ Object.assign(controlsContainer.style, {
   backgroundColor: "#f9f9f9",
   borderRadius: "6px",
   border: "1px solid #ddd",
+  color: "black",
 });
 
 // Helper function to create a labeled slider
@@ -327,13 +353,48 @@ letterSpacing.slider.addEventListener("input", updateStyles);
 fontSize.slider.addEventListener("input", updateStyles);
 wordSpacing.slider.addEventListener("input", updateStyles);
 
-// update UI based on state
+// Add this helper function to manage the dimming consistently
+function updateBackdropDimming() {
+  const overlay = shadowRoot.querySelector(
+    "#article-reader-overlay",
+  ) as HTMLElement;
+  const host = shadowRoot.host as HTMLElement;
+
+  if (modalOpen) {
+    // If modal is open, dim the background
+    host.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+    host.style.position = "fixed";
+    host.style.top = "0";
+    host.style.left = "0";
+    host.style.width = "100%";
+    host.style.height = "100%";
+    host.style.zIndex = "999999";
+
+    if (overlay) {
+      // If reader mode is ALSO on, dim the white reader overlay
+      overlay.style.background =
+        "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), #ffffff";
+    }
+  } else {
+    // If modal is closed, remove dimming
+    host.style.backgroundColor = "transparent";
+    // Important: Reset pointer events so user can click the page again
+    host.style.position = "static";
+    host.style.width = "auto";
+    host.style.height = "auto";
+
+    if (overlay) {
+      overlay.style.background = "#ffffff";
+    }
+  }
+}
+
+// --- UPDATED renderToggle ---
 function renderToggle() {
   toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
   toggleDiv.setAttribute("aria-pressed", readerMode.toString());
 
-  // Check if the text container already exists, otherwise create it
-  let readingRulerTextContainer = document.querySelector(
+  let readingRulerTextContainer = shadowRoot.querySelector(
     "#reading-ruler-info",
   ) as HTMLElement;
   if (!readingRulerTextContainer) {
@@ -348,12 +409,9 @@ function renderToggle() {
     headerContainer.appendChild(readingRulerTextContainer);
   }
 
-  // Update text based on state
-  readingRulerTextContainer.textContent = readerMode
-    ? "Double-click to lock/unlock the reading ruler. It's locked when it's green. It's unlocked when it's yellow."
-    : "Activate reader mode to show the reading ruler and/or view your last saved position.";
-
   if (readerMode) {
+    readingRulerTextContainer.textContent =
+      "Double-click to lock/unlock the reading ruler...";
     const documentClone = document.cloneNode(true) as Document;
     const article = new Readability(documentClone).parse();
     if (article && article.content) {
@@ -361,11 +419,15 @@ function renderToggle() {
       headerContainer.appendChild(controlsContainer);
     }
   } else {
-    document.querySelector("#article-reader-overlay")?.remove();
-    headerContainer.removeChild(controlsContainer);
+    shadowRoot.querySelector("#article-reader-overlay")?.remove();
+    if (headerContainer.contains(controlsContainer)) {
+      headerContainer.removeChild(controlsContainer);
+    }
   }
 
-  document.body.classList.toggle("reader-mode", readerMode);
+  // CRITICAL: Update dimming every time reader mode is toggled
+  updateBackdropDimming();
+  shadowRoot.host.classList.toggle("reader-mode", readerMode);
 }
 
 // toggle behavior
@@ -379,6 +441,7 @@ Object.assign(toggleDiv.style, {
   alignItems: "center",
   justifyContent: "center",
   margin: "5px 0 10px 0",
+  color: "black",
 });
 
 toggleDiv.appendChild(mainHeader);
@@ -400,9 +463,81 @@ tocHeader.textContent = "Contents";
 
 header.appendChild(tocHeader);
 
+const summaryContainer = document.createElement("div");
+
+Object.assign(summaryContainer.style, {
+  fontSize: "14px",
+  color: "#333",
+  border: "1px solid #e5e7eb",
+  backgroundColor: "#f9f9f9",
+  borderRadius: "8px",
+  padding: "12px 14px",
+  maxHeight: "140px",
+  overflowY: "auto",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  lineHeight: "1.5",
+  width: "100%",
+  boxSizing: "border-box",
+  wordWrap: "break-word",
+  overflowWrap: "break-word",
+});
+// align the arrow span to the right of the header
+summaryContainer.innerHTML = `
+  <h2 style="
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: -1px;
+    color: #111827;
+  ">
+    Article Summary
+    <button id="open-summary-btn" style="
+      margin-left: auto;
+      font-size: 13px;
+      font-weight: bold;
+      border: 1px solid #111827;
+      border-radius: 6px;
+      padding: 2px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f3f4f6;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    "
+    onmouseover="this.style.backgroundColor='#e5e7eb'" 
+    onmouseout="this.style.backgroundColor='#f3f4f6'"
+    aria-label="Open Summary Window Button"
+    title="Open Summary Window">
+      ↗
+    </button>
+  </h2>
+
+  <p style="
+    margin: -5px 0 5px 0;
+    color: #4b5563;
+    font-size: 13px;
+  ">
+    ${getArticleSummary()}
+  </p>
+
+  <p style="
+    color: #4b5563;
+    font-style: italic;
+    font-size: 11px;
+  ">
+    <span style="font-style: normal;">ⓘ</span>
+    Please note that this AI-free summary has been generated automatically and may be inaccurate or incomplete.
+  </p>
+`;
+
 // --- Assemble ---
 headerContainer.appendChild(mainHeader); // Title
 headerContainer.appendChild(header); // Contents & Buttons
+headerContainer.appendChild(summaryContainer);
 headerContainer.appendChild(toggleDiv);
 
 // --- Button Container (groups both buttons) ---
@@ -411,6 +546,22 @@ Object.assign(buttonGroup.style, {
   display: "flex",
   marginLeft: "auto", // pushes group to the right side
 });
+
+function getArticleSummary() {
+  const documentClone = document.cloneNode(true) as Document;
+  const article = new Readability(documentClone).parse();
+  const summary = Summarizer.summarize(
+    DOMPurify.sanitize(article?.textContent || "No content to summarize"),
+    0.5, // Summarize to 50% of original length
+    5, // Maximum of 5 sentences
+    {
+      deduplicateSimilar: true, // Remove similar sentences
+      favorPositionScore: true, // Prioritize intro/conclusion sentences
+    },
+  );
+
+  return summary;
+}
 
 // -- Close Button ---
 const closeBtn = document.createElement("button");
@@ -436,7 +587,7 @@ closeBtn.onclick = () => {
     "Are you sure you want to hide the widget? You can always reopen it by refreshing the page.",
   );
   if (!confirmation) return;
-  tableOfContentsDiv.remove();
+  widgetContainer.remove();
 };
 
 // --- Collapse Button ---
@@ -453,6 +604,7 @@ Object.assign(collapseBtn.style, {
   fontWeight: "bold",
   display: "flex",
   alignItems: "center",
+  color: "black",
   justifyContent: "center",
 });
 
@@ -470,8 +622,8 @@ Object.assign(header.style, {
 header.appendChild(buttonGroup);
 header.appendChild(closeBtn);
 header.appendChild(collapseBtn);
-tableOfContentsDiv.appendChild(headerContainer);
-tableOfContentsDiv.appendChild(header);
+widgetContainer.appendChild(headerContainer);
+widgetContainer.appendChild(header);
 
 const tableOfContentsListContainer = document.createElement("ul");
 tableOfContentsListContainer.id = "table-of-contents-list";
@@ -479,6 +631,7 @@ tableOfContentsListContainer.id = "table-of-contents-list";
 Object.assign(tableOfContentsListContainer.style, {
   padding: "10px 0 0 20px",
   margin: "0",
+  color: "black",
   maxHeight: "70vh",
   overflowY: "auto",
   transition: "all 0.2s ease", // Smooth opening/closing
@@ -498,7 +651,7 @@ collapseBtn.onclick = (e) => {
     tableOfContentsListContainer.style.display = "block";
     header.style.borderBottom = "1px solid #eee";
     collapseBtn.textContent = "-";
-    tableOfContentsDiv.style.width = "250px";
+    widgetContainer.style.width = "250px";
   }
 };
 
@@ -510,16 +663,16 @@ let offsetY = 0;
 mainHeader.addEventListener("mousedown", (e) => {
   if (e.target === collapseBtn) return; // Don't drag if clicking the button
   isDragging = true;
-  const rect = tableOfContentsDiv.getBoundingClientRect();
+  const rect = widgetContainer.getBoundingClientRect();
   offsetX = e.clientX - rect.left;
   offsetY = e.clientY - rect.top;
 });
 
 document.addEventListener("mousemove", (e) => {
   if (!isDragging) return;
-  tableOfContentsDiv.style.right = "auto";
-  tableOfContentsDiv.style.left = `${e.clientX - offsetX}px`;
-  tableOfContentsDiv.style.top = `${e.clientY - offsetY}px`;
+  widgetContainer.style.right = "auto";
+  widgetContainer.style.left = `${e.clientX - offsetX}px`;
+  widgetContainer.style.top = `${e.clientY - offsetY}px`;
 });
 
 document.addEventListener("mouseup", () => {
@@ -531,8 +684,8 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
 
   if (!tags.length || isUrlBlacklisted(window.location.href)) return;
 
-  tableOfContentsDiv.appendChild(tableOfContentsListContainer);
-  document.body.appendChild(tableOfContentsDiv);
+  widgetContainer.appendChild(tableOfContentsListContainer);
+  document.body.appendChild(widgetContainer);
 
   tags.forEach((tag) => {
     if (isHeaderBlacklisted(tag.textContent || "")) return;
@@ -560,6 +713,141 @@ function buildTableOfContents(tags: NodeListOf<Element>) {
     }
   });
 }
+
+let modalOpen = false;
+shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", () => {
+  if (modalOpen) return;
+
+  // Inside shadowRoot.querySelector("#open-summary-btn")?.addEventListener("click", ...
+  // Replace the manual "Background overlay" code block with:
+  modalOpen = true;
+  updateBackdropDimming();
+
+  const modalContainer = document.createElement("div");
+  Object.assign(modalContainer.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    padding: "20px",
+    backgroundColor: "#ffffff",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: "1000000",
+    width: "60%", // Slightly wider to accommodate side-by-side layout
+    maxHeight: "50%", // Increased height for better visibility
+    overflowY: "auto",
+  });
+
+  const modalHeader = document.createElement("h2");
+  modalHeader.textContent = "Article Summary";
+  Object.assign(modalHeader.style, {
+    marginTop: "0",
+    marginBottom: "20px",
+    color: "#111827",
+  });
+
+  // --- NEW: Content Wrapper to hold text and sliders side-by-side ---
+  const contentWrapper = document.createElement("div");
+  Object.assign(contentWrapper.style, {
+    display: "flex",
+    flexDirection: "row",
+    gap: "20px", // Spacing between text and sliders
+    alignItems: "flex-start",
+  });
+
+  const textContainer = document.createElement("div");
+  Object.assign(textContainer.style, {
+    flex: "1", // Take up proportional space
+  });
+
+  const summaryText = document.createElement("p");
+  summaryText.textContent = getArticleSummary();
+  Object.assign(summaryText.style, {
+    color: "#4b5563",
+    fontSize: "14px",
+    lineHeight: "1.5",
+    margin: "0",
+  });
+
+  const slidersContainer = controlsContainer.cloneNode(true) as HTMLElement;
+  Object.assign(slidersContainer.style, {
+    flex: "1", // Take up proportional space
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  });
+
+  const closeBtn = document.createElement("button");
+  Object.assign(closeBtn.style, {
+    position: "absolute",
+    top: "10px",
+    right: "10px",
+    border: "none",
+    background: "#ff4d4d",
+    borderRadius: "4px",
+    color: "#fff",
+    width: "24px",
+    height: "24px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "bold",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+  closeBtn.textContent = "×";
+
+  closeBtn.onclick = () => {
+    modalContainer.remove();
+    modalOpen = false; // Set this first
+    updateBackdropDimming(); // Then refresh UI
+  };
+
+  // make the slider adjust the summary text in real-time
+  const lineSpacingSlider = slidersContainer.querySelector(
+    "#line-height-input",
+  ) as HTMLInputElement;
+  const letterSpacingSlider = slidersContainer.querySelector(
+    "#letter-spacing-input",
+  ) as HTMLInputElement;
+  const fontSizeSlider = slidersContainer.querySelector(
+    "#font-size-input",
+  ) as HTMLInputElement;
+  const wordSpacingSlider = slidersContainer.querySelector(
+    "#word-spacing-input",
+  ) as HTMLInputElement;
+
+  lineSpacingSlider.addEventListener("input", () => {
+    summaryText.style.lineHeight = lineSpacingSlider.value;
+  });
+
+  letterSpacingSlider.addEventListener("input", () => {
+    summaryText.style.letterSpacing = letterSpacingSlider.value + "em";
+  });
+
+  fontSizeSlider.addEventListener("input", () => {
+    summaryText.style.fontSize = fontSizeSlider.value + "px";
+  });
+
+  wordSpacingSlider.addEventListener("input", () => {
+    summaryText.style.wordSpacing = wordSpacingSlider.value + "em";
+  });
+
+  // Assembly
+  textContainer.appendChild(summaryText);
+
+  // Append containers to the horizontal wrapper
+  contentWrapper.appendChild(textContainer);
+  contentWrapper.appendChild(slidersContainer);
+
+  modalContainer.appendChild(closeBtn);
+  modalContainer.appendChild(modalHeader);
+  modalContainer.appendChild(contentWrapper); // Add the wrapper to the modal
+
+  shadowRoot.appendChild(modalContainer);
+});
 
 if (document.readyState === "complete") {
   buildTableOfContents(init());
