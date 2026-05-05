@@ -8,6 +8,7 @@ import { Summarizer } from "ts-summarizer";
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons
 // TODO - add a 'jump to reading bar' button
+// TODO - if reader mode is on, make the opacity of the background darker
 // ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
 // ! - on reader mode, the slider logic doesn't seem to be working anymore
 
