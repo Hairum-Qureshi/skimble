@@ -3,13 +3,14 @@ import { isUrlBlacklisted, isHeaderBlacklisted } from "./blacklists";
 import DOMPurify from "dompurify";
 import { Summarizer } from "ts-summarizer";
 
-// TODO - need to make all the links black when isArticleReaderModeActive is true
 // TODO - need to reset the slider values when reader mode is toggled off
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
-// TODO - add aria labels to the collapse and close buttons
+// TODO - add aria labels to the collapse and close buttons as well as the close button in the modal
 // TODO - add a 'jump to reading bar' button
+// TODO - make a spotlight effect where the highlighted area the reading ruler is, it's not dimmed, but the rest of the overlay is dimmed when the button is toggled on
+// TODO - fix the issue where the slider controls won't work on reader mode
+// ! if you toggle the reader button on/off, the toggle background dimming button gets removed and re-added, which resets its state to off. Need to fix this by making sure the button state is preserved when toggling reader mode
 // ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
-// ! - on reader mode, the slider logic doesn't seem to be working anymore
 
 const host = document.createElement("div");
 host.id = "skimble-root";
@@ -317,7 +318,7 @@ function initExtension() {
 
   // --- Event Listeners to Update Styles ---
   const updateStyles = () => {
-    const overlay = document.querySelector("#article-reader-overlay");
+    const overlay = shadowRoot.querySelector("#article-reader-overlay");
     const article = overlay?.querySelector("div"); // This targets your articleContainer
 
     if (article) {
@@ -362,11 +363,16 @@ function initExtension() {
   function updateBackdropDimming() {
     const overlay = shadowRoot.querySelector(
       "#article-reader-overlay",
-    ) as HTMLElement;
+    ) as HTMLElement | null;
+
     const host = shadowRoot.host as HTMLElement;
 
-    if (modalOpen) {
-      // If modal is open, dim the background
+    // Only dim if BOTH:
+    // 1. modalOpen is true
+    // 2. readerMode is enabled
+    const shouldDim = modalOpen && readerMode;
+
+    if (shouldDim) {
       host.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
       host.style.position = "fixed";
       host.style.top = "0";
@@ -376,15 +382,14 @@ function initExtension() {
       host.style.zIndex = "999999";
 
       if (overlay) {
-        // If reader mode is ALSO on, dim the white reader overlay
         overlay.style.background =
           "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), #ffffff";
       }
     } else {
-      // If modal is closed, remove dimming
       host.style.backgroundColor = "transparent";
-      // Important: Reset pointer events so user can click the page again
       host.style.position = "static";
+      host.style.top = "";
+      host.style.left = "";
       host.style.width = "auto";
       host.style.height = "auto";
 
@@ -394,71 +399,149 @@ function initExtension() {
     }
   }
 
-  // --- UPDATED renderToggle ---
   function renderToggle() {
     toggleDiv.textContent = readerMode ? "Reader Mode: ON" : "Reader Mode: OFF";
+
     toggleDiv.setAttribute("aria-pressed", readerMode.toString());
 
-    let readingRulerTextContainer = shadowRoot.querySelector(
-      "#reading-ruler-info",
-    ) as HTMLElement;
-    if (!readingRulerTextContainer) {
-      readingRulerTextContainer = document.createElement("div");
-      readingRulerTextContainer.id = "reading-ruler-info";
-      Object.assign(readingRulerTextContainer.style, {
-        fontSize: "13px",
-        color: "#555",
-        marginBottom: "5px",
-        lineHeight: "1.4",
-      });
-      headerContainer.appendChild(readingRulerTextContainer);
-    }
+    // -----------------------------
+    // Reuse existing dimming button
+    // -----------------------------
+    let toggleDarkOverlayBtn = shadowRoot.querySelector(
+      "#toggle-dimming-btn",
+    ) as HTMLButtonElement | null;
 
-    if (readerMode) {
-      readingRulerTextContainer.textContent =
-        "Double-click to lock/unlock the reading ruler";
-      const documentClone = document.cloneNode(true) as Document;
-      const article = new Readability(documentClone).parse();
-      if (article && article.content) {
-        renderArticleReaderModeUIOverlay(article.content);
-        headerContainer.appendChild(controlsContainer);
-      }
+    if (!toggleDarkOverlayBtn) {
+      toggleDarkOverlayBtn = document.createElement("button");
 
-      const toggleDarkOverlayBtn = document.createElement("button");
-      toggleDarkOverlayBtn.id = "toggle-dark-overlay-btn";
+      toggleDarkOverlayBtn.id = "toggle-dimming-btn";
       toggleDarkOverlayBtn.textContent = "Toggle Background Dimming";
+
       Object.assign(toggleDarkOverlayBtn.style, {
         margin: "5px 0 15px 0",
         padding: "5px",
         border: "1px solid #ccc",
-        display: "inline-block",
+        display: "none",
         backgroundColor: "#f0f0f0",
         borderRadius: "6px",
         color: "black",
         userSelect: "none",
         cursor: "pointer",
       });
-      toggleDarkOverlayBtn.setAttribute(
-        "aria-label",
-        "Toggle Background Dimming Button",
-      );
 
+      // IMPORTANT:
+      // Add listener only once
       toggleDarkOverlayBtn.addEventListener("click", () => {
         modalOpen = !modalOpen;
+
         updateBackdropDimming();
+
+        const ruler = shadowRoot.querySelector(
+          "#reading-ruler",
+        ) as HTMLElement | null;
+
+        if (ruler && modalOpen) {
+          ruler.style.backgroundColor = "transparent";
+        } else if (ruler) {
+          const savedRulerPos = localStorage.getItem("readingRulerPosition");
+
+          ruler.style.backgroundColor = savedRulerPos
+            ? "rgba(0, 255, 0, 0.3)"
+            : "rgba(255, 255, 0, 0.3)";
+        }
       });
 
       headerContainer.appendChild(toggleDarkOverlayBtn);
+    }
+
+    // -----------------------------
+    // Reading ruler helper text
+    // -----------------------------
+    let readingRulerTextContainer = shadowRoot.querySelector(
+      "#reading-ruler-info",
+    ) as HTMLElement | null;
+
+    if (readerMode) {
+      // --------------------------------
+      // Create helper text only once
+      // --------------------------------
+      if (!readingRulerTextContainer) {
+        readingRulerTextContainer = document.createElement("div");
+
+        readingRulerTextContainer.id = "reading-ruler-info";
+
+        Object.assign(readingRulerTextContainer.style, {
+          fontSize: "13px",
+          color: "#555",
+          marginBottom: "5px",
+          lineHeight: "1.4",
+        });
+
+        headerContainer.appendChild(readingRulerTextContainer);
+      }
+
+      readingRulerTextContainer.textContent =
+        "Double-click to lock/unlock the reading ruler";
+
+      // --------------------------------
+      // Show dimming button
+      // --------------------------------
+      toggleDarkOverlayBtn.style.display = "inline-block";
+
+      // --------------------------------
+      // Prevent duplicate overlays
+      // --------------------------------
+      let existingOverlay = shadowRoot.querySelector("#article-reader-overlay");
+
+      if (!existingOverlay) {
+        const documentClone = document.cloneNode(true) as Document;
+
+        const article = new Readability(documentClone).parse();
+
+        if (article && article.content) {
+          renderArticleReaderModeUIOverlay(article.content);
+        }
+      }
+
+      // --------------------------------
+      // Prevent duplicate controls
+      // --------------------------------
+      if (!headerContainer.contains(controlsContainer)) {
+        headerContainer.appendChild(controlsContainer);
+      }
     } else {
+      // --------------------------------
+      // Remove reader overlay
+      // --------------------------------
       shadowRoot.querySelector("#article-reader-overlay")?.remove();
-      shadowRoot.querySelector("#toggle-dark-overlay-btn")?.remove();
+
+      // --------------------------------
+      // Hide dimming button
+      // (DO NOT REMOVE IT)
+      // --------------------------------
+      toggleDarkOverlayBtn.style.display = "none";
+
+      // --------------------------------
+      // Remove controls
+      // --------------------------------
       if (headerContainer.contains(controlsContainer)) {
         headerContainer.removeChild(controlsContainer);
       }
+
+      // --------------------------------
+      // Remove ruler helper text
+      // --------------------------------
+      if (readingRulerTextContainer) {
+        readingRulerTextContainer.remove();
+      }
+
+      // IMPORTANT:
+      // Do NOT reset modalOpen here.
+      // This preserves dimming state.
     }
 
-    // CRITICAL: Update dimming every time reader mode is toggled
     updateBackdropDimming();
+
     shadowRoot.host.classList.toggle("reader-mode", readerMode);
   }
 
