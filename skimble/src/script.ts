@@ -632,7 +632,8 @@ function initExtension() {
   const buttonGroup = document.createElement("div");
   Object.assign(buttonGroup.style, {
     display: "flex",
-    marginLeft: "auto", // pushes group to the right side
+    gap: "3px",
+    margin: "0 0 0 auto",
   });
 
   function getArticleSummary() {
@@ -708,8 +709,6 @@ function initExtension() {
 
   // Append group to header
   mainHeader.appendChild(buttonGroup);
-  mainHeader.appendChild(closeBtn);
-  mainHeader.appendChild(collapseBtn);
   widgetContainer.appendChild(headerContainer);
   widgetContainer.appendChild(header);
 
@@ -733,12 +732,17 @@ function initExtension() {
     isCollapsed = !isCollapsed;
 
     if (isCollapsed) {
+      // Hide the bodies, keep the head
+      headerContainer.style.display = "none";
+      header.style.display = "none";
       tableOfContentsListContainer.style.display = "none";
       collapseBtn.textContent = "+";
     } else {
+      headerContainer.style.display = "flex";
+      header.style.display = "flex";
       tableOfContentsListContainer.style.display = "block";
-      header.style.borderBottom = "1px solid #eee";
       collapseBtn.textContent = "-";
+      widgetContainer.style.width = "22%"; 
     }
   };
 
@@ -771,6 +775,9 @@ function initExtension() {
 
     if (!tags.length) return;
 
+    widgetContainer.appendChild(mainHeader); // Add title/buttons first (Safe Zone)
+    widgetContainer.appendChild(headerContainer); // Add everything else
+    widgetContainer.appendChild(header);
     widgetContainer.appendChild(tableOfContentsListContainer);
     document.body.appendChild(widgetContainer);
 
