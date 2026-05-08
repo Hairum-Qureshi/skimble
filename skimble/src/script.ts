@@ -18,7 +18,7 @@ const shadowRoot = host.attachShadow({ mode: "open" });
 
 document.body.appendChild(host);
 
-function bootstrap() {
+export function bootstrap() {
   if (isUrlBlacklisted(window.location.href)) return;
 
   initExtension();
@@ -742,7 +742,7 @@ function initExtension() {
       header.style.display = "flex";
       tableOfContentsListContainer.style.display = "block";
       collapseBtn.textContent = "-";
-      widgetContainer.style.width = "22%"; 
+      widgetContainer.style.width = "22%";
     }
   };
 
@@ -779,7 +779,6 @@ function initExtension() {
     widgetContainer.appendChild(headerContainer); // Add everything else
     widgetContainer.appendChild(header);
     widgetContainer.appendChild(tableOfContentsListContainer);
-    document.body.appendChild(widgetContainer);
 
     tags.forEach((tag) => {
       if (isHeaderBlacklisted(tag.textContent || "")) return;
