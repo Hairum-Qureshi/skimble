@@ -205,6 +205,8 @@ function initExtension() {
     fontSize: "18px",
     color: "black",
     marginTop: "10px",
+    display: "flex",
+    flexDirection: "row",
   });
 
   mainHeader.textContent = "⠿ Skimble Reader Widget";
@@ -705,9 +707,9 @@ function initExtension() {
   });
 
   // Append group to header
-  header.appendChild(buttonGroup);
-  header.appendChild(closeBtn);
-  header.appendChild(collapseBtn);
+  mainHeader.appendChild(buttonGroup);
+  mainHeader.appendChild(closeBtn);
+  mainHeader.appendChild(collapseBtn);
   widgetContainer.appendChild(headerContainer);
   widgetContainer.appendChild(header);
 
