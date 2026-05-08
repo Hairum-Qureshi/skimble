@@ -6,11 +6,10 @@ import { Summarizer } from "ts-summarizer";
 // TODO - need to reset the slider values when reader mode is toggled off
 // TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons as well as the close button in the modal
-// TODO - add a 'jump to reading bar' button
 // TODO - make a spotlight effect where the highlighted area the reading ruler is, it's not dimmed, but the rest of the overlay is dimmed when the button is toggled on
 // TODO - fix the issue where the slider controls won't work on reader mode
-// ! if you toggle the reader button on/off, the toggle background dimming button gets removed and re-added, which resets its state to off. Need to fix this by making sure the button state is preserved when toggling reader mode
 // ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
+// TODO - for some reason the collapse button shrinks the width
 
 const host = document.createElement("div");
 host.id = "skimble-root";
@@ -410,6 +409,48 @@ function initExtension() {
     readerControlsGroup.innerHTML = "";
 
     if (readerMode) {
+      // --- NEW: Jump to Reading Ruler Button ---
+      const jumpBtn = document.createElement("button");
+      jumpBtn.id = "jump-to-ruler-btn";
+      jumpBtn.textContent = "Jump to Reading Ruler Position";
+      jumpBtn.setAttribute(
+        "aria-label",
+        "Jump to Reading Ruler Position Button",
+      );
+      jumpBtn.title = "Jump to Reading Ruler Position";
+
+      Object.assign(jumpBtn.style, {
+        margin: "5px 0 10px 0",
+        padding: "8px",
+        border: "1px solid #ccc",
+        backgroundColor: "#e0e7ff", // Light blue to distinguish from dim button
+        borderRadius: "6px",
+        color: "#1e1b4b",
+        cursor: "pointer",
+        display: "block",
+        width: "100%",
+      });
+
+      jumpBtn.addEventListener("click", () => {
+        const overlay = shadowRoot.querySelector(
+          "#article-reader-overlay",
+        ) as HTMLElement;
+        const ruler = shadowRoot.getElementById("reading-ruler");
+
+        if (overlay && ruler) {
+          // Get the vertical position of the ruler relative to the scrollable overlay
+          const rulerTop = parseFloat(ruler.style.top);
+
+          overlay.scrollTo({
+            top: rulerTop - overlay.clientHeight / 2, // Center the ruler in view
+            behavior: "smooth",
+          });
+        }
+      });
+
+      readerControlsGroup.appendChild(jumpBtn);
+      // --- End of Jump Button ---
+
       const dimBtn = document.createElement("button");
       dimBtn.id = "toggle-dimming-btn";
       dimBtn.textContent = "Toggle Background Dimming";
@@ -428,9 +469,7 @@ function initExtension() {
 
       dimBtn.addEventListener("click", () => {
         modalOpen = !modalOpen;
-
         updateBackdropDimming();
-
         const ruler = shadowRoot.getElementById("reading-ruler");
 
         if (ruler) {
@@ -446,7 +485,6 @@ function initExtension() {
 
       // Info Text
       const info = document.createElement("div");
-
       info.id = "reading-ruler-info";
 
       Object.assign(info.style, {
@@ -456,15 +494,14 @@ function initExtension() {
         lineHeight: "1.4",
       });
 
-      info.textContent = "Double-click to lock/unlock the reading ruler";
+      info.textContent =
+        "Double-click to lock/unlock the reading ruler. Green means it's locked and your position is saved. Yellow means it's unlocked and follows your cursor.";
 
       readerControlsGroup.appendChild(info);
 
       if (!shadowRoot.getElementById("article-reader-overlay")) {
         const documentClone = document.cloneNode(true) as Document;
-
         const article = new Readability(documentClone).parse();
-
         if (article?.content) {
           renderArticleReaderModeUIOverlay(article.content);
         }
@@ -478,9 +515,9 @@ function initExtension() {
     }
 
     updateBackdropDimming();
-
     shadowRoot.host.classList.toggle("reader-mode", readerMode);
   }
+
   // toggle behavior
   toggleDiv.addEventListener("click", () => {
     readerMode = !readerMode;
@@ -491,7 +528,7 @@ function initExtension() {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "5px 0 10px 0",
+    margin: "5px 0 5px 0",
     color: "black",
   });
 
