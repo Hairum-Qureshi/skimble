@@ -530,7 +530,7 @@ function initExtension() {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "5px 0 5px 0",
+    marginTop: "5px",
     color: "black",
   });
 
@@ -739,7 +739,6 @@ function initExtension() {
       tableOfContentsListContainer.style.display = "block";
       header.style.borderBottom = "1px solid #eee";
       collapseBtn.textContent = "-";
-      widgetContainer.style.width = "250px";
     }
   };
 
