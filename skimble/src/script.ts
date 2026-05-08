@@ -416,15 +416,42 @@ function initExtension() {
 
     if (readerMode) {
       readingRulerTextContainer.textContent =
-        "Double-click to lock/unlock the reading ruler...";
+        "Double-click to lock/unlock the reading ruler";
       const documentClone = document.cloneNode(true) as Document;
       const article = new Readability(documentClone).parse();
       if (article && article.content) {
         renderArticleReaderModeUIOverlay(article.content);
         headerContainer.appendChild(controlsContainer);
       }
+
+      const toggleDarkOverlayBtn = document.createElement("button");
+      toggleDarkOverlayBtn.id = "toggle-dark-overlay-btn";
+      toggleDarkOverlayBtn.textContent = "Toggle Background Dimming";
+      Object.assign(toggleDarkOverlayBtn.style, {
+        margin: "5px 0 15px 0",
+        padding: "5px",
+        border: "1px solid #ccc",
+        display: "inline-block",
+        backgroundColor: "#f0f0f0",
+        borderRadius: "6px",
+        color: "black",
+        userSelect: "none",
+        cursor: "pointer",
+      });
+      toggleDarkOverlayBtn.setAttribute(
+        "aria-label",
+        "Toggle Background Dimming Button",
+      );
+
+      toggleDarkOverlayBtn.addEventListener("click", () => {
+        modalOpen = !modalOpen;
+        updateBackdropDimming();
+      });
+
+      headerContainer.appendChild(toggleDarkOverlayBtn);
     } else {
       shadowRoot.querySelector("#article-reader-overlay")?.remove();
+      shadowRoot.querySelector("#toggle-dark-overlay-btn")?.remove();
       if (headerContainer.contains(controlsContainer)) {
         headerContainer.removeChild(controlsContainer);
       }
