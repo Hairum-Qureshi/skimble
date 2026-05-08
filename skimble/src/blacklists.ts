@@ -1,40 +1,101 @@
-// I am aware the manifest.json file has a "exclude_matches" field that can be used to exclude certain URLs from the extension's content scripts. However, after trying a variety of ways to exclude certain URLs despite allowing all URLs, it seems that the "exclude_matches" field does not work as expected. Therefore, I have implemented a custom URL blacklist within the content script itself to ensure that the extension does not run on specified URLs.
+const blockedHosts = [
+  "youtube.com",
+  "facebook.com",
+  "instagram.com",
+  "x.com",
+  "tiktok.com",
+  "linkedin.com",
+  "reddit.com",
+  "netflix.com",
+  "amazon.com",
+  "twitch.tv",
+  "spotify.com",
+  "github.com",
+  "chatgpt.com",
+];
 
-const urlBlacklist = [
-  "*://*.youtube.com/*",
-  "*://*.facebook.com/*",
-  "*://*.instagram.com/*",
-  "*://*.x.com/*",
-  "*://*.tiktok.com/*",
-  "*://*.linkedin.com/*",
-  "*://*.reddit.com/*",
-  "*://*.netflix.com/*",
-  "*://*.amazon.com/*",
-  "*://*.twitch.tv/*",
-  "*://*.spotify.com/*",
-  "*://*.github.com/*",
-  "*://github.com/*", 
-  "*://www.google.com/search*",
-  "*://drive.google.com/*",
-  "*://calendar.google.com/*",
-  "*://docs.google.com/*",
-  "*://sheets.google.com/*",
-  "*://slides.google.com/*",
-  "*://forms.google.com/*",
-  "*://keep.google.com/*",
-  "*://photos.google.com/*",
-  "*://translate.google.com/*",
-  "*://finance.google.com/*",
-  "*://gemini.google.com/*",
-  "*://chatgpt.com/*",
+// Specific blocked routes
+const blockedRoutes = [
+  {
+    hostname: "google.com",
+    pathStartsWith: "/search",
+  },
+  {
+    hostname: "drive.google.com",
+  },
+  {
+    hostname: "calendar.google.com",
+  },
+  {
+    hostname: "docs.google.com",
+  },
+  {
+    hostname: "sheets.google.com",
+  },
+  {
+    hostname: "slides.google.com",
+  },
+  {
+    hostname: "forms.google.com",
+  },
+  {
+    hostname: "keep.google.com",
+  },
+  {
+    hostname: "photos.google.com",
+  },
+  {
+    hostname: "translate.google.com",
+  },
+  {
+    hostname: "finance.google.com",
+  },
+  {
+    hostname: "gemini.google.com",
+  },
 ];
 
 export function isUrlBlacklisted(url: string): boolean {
-  return urlBlacklist.some((pattern) => {
-    const regexPattern = (pattern as string).replace(/\*/g, ".*");
-    const regex = new RegExp(`^${regexPattern}$`);
-    return regex.test(url);
-  });
+  try {
+    const parsedUrl = new URL(url);
+
+    // Remove "www." for cleaner comparison
+    const hostname = parsedUrl.hostname.replace(/^www\./, "");
+
+    // Match full domains + subdomains
+    const isBlockedHost = blockedHosts.some(
+      (blockedHost) =>
+        hostname === blockedHost || hostname.endsWith(`.${blockedHost}`),
+    );
+
+    if (isBlockedHost) {
+      return true;
+    }
+
+    // Match special routes
+    const isBlockedRoute = blockedRoutes.some((route) => {
+      const routeHost = route.hostname.replace(/^www\./, "");
+
+      const hostnameMatches =
+        hostname === routeHost || hostname.endsWith(`.${routeHost}`);
+
+      if (!hostnameMatches) {
+        return false;
+      }
+
+      // If no path restriction exists, block entire domain
+      if (!route.pathStartsWith) {
+        return true;
+      }
+
+      return parsedUrl.pathname.startsWith(route.pathStartsWith);
+    });
+
+    return isBlockedRoute;
+  } catch (error) {
+    console.error("Invalid URL passed to blacklist:", url);
+    return false;
+  }
 }
 
 const headersBlacklist = [
@@ -95,7 +156,8 @@ const headersBlacklist = [
 
 export function isHeaderBlacklisted(headerText: string): boolean {
   const normalizedHeader = headerText.toLowerCase().trim();
-  return headersBlacklist.some((blacklisted) => {
-    return normalizedHeader.includes(blacklisted);
-  });
+
+  return headersBlacklist.some((blacklisted) =>
+    normalizedHeader.includes(blacklisted.toLowerCase()),
+  );
 }
