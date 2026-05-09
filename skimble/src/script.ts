@@ -621,12 +621,98 @@ function initExtension() {
   </p>
 `;
 
+  // create container that will have the toggle for enable Inter font with header 'Fonts'
+  const fontToggleContainer = document.createElement("div");
+  const fontToggleHeader = document.createElement("strong");
+  fontToggleHeader.textContent = "Fonts";
+  const interFontToggle = document.createElement("button");
+  interFontToggle.textContent = "Use Inter Font";
+  Object.assign(interFontToggle.style, {
+    margin: "5px 0 5px 0",
+    padding: "8px",
+    border: "1px solid #ccc",
+    backgroundColor: "#f0f0f0",
+    borderRadius: "6px",
+    color: "black",
+    cursor: "pointer",
+    display: "block",
+    width: "100%",
+  });
+
+  const systemUIFontToggle = document.createElement("button");
+  systemUIFontToggle.textContent = "Use System UI Font";
+  Object.assign(systemUIFontToggle.style, {
+    margin: "5px 0 5px 0",
+    padding: "8px",
+    border: "1px solid #ccc",
+    backgroundColor: "#f0f0f0",
+    borderRadius: "6px",
+    color: "black",
+    cursor: "pointer",
+    display: "block",
+    width: "100%",
+  });
+
+  let interFont = false;
+  let systemUIFont = false;
+
+  const interStyle = document.createElement("style");
+  const systemStyle = document.createElement("style");
+
+  document.head.appendChild(interStyle);
+  document.head.appendChild(systemStyle);
+
+  interFontToggle.addEventListener("click", () => {
+    systemUIFont = false;
+    systemStyle.textContent = "";
+
+    if (!interFont) {
+      interStyle.textContent = `
+      * {
+        font-family: Inter, sans-serif !important;
+      }
+    `;
+      interFontToggle.innerText = "Restore Default Font";
+      systemUIFontToggle.innerText = "Use System UI Font";
+    } else {
+      interStyle.textContent = "";
+      interFontToggle.innerText = "Use Inter Font";
+    }
+
+    interFont = !interFont;
+  });
+
+  systemUIFontToggle.addEventListener("click", () => {
+    interFont = false;
+    interStyle.textContent = "";
+
+    if (!systemUIFont) {
+      systemStyle.textContent = `
+      * {
+        font-family: system-ui, sans-serif !important;
+      }
+    `;
+      systemUIFontToggle.innerText = "Restore Default Font";
+      interFontToggle.innerText = "Use Inter Font";
+    } else {
+      systemStyle.textContent = "";
+      systemUIFontToggle.innerText = "Use System UI Font";
+    }
+
+    systemUIFont = !systemUIFont;
+  });
+
+  fontToggleContainer.appendChild(fontToggleHeader);
+  fontToggleContainer.appendChild(interFontToggle);
+  fontToggleContainer.appendChild(systemUIFontToggle);
+
   // --- Assemble ---
   headerContainer.appendChild(mainHeader); // Title
   headerContainer.appendChild(header); // Contents & Buttons
   headerContainer.appendChild(summaryContainer);
   headerContainer.appendChild(toggleDiv);
   headerContainer.appendChild(readerControlsGroup);
+  headerContainer.appendChild(fontToggleContainer);
 
   // --- Button Container (groups both buttons) ---
   const buttonGroup = document.createElement("div");
