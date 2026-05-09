@@ -4,12 +4,8 @@ import DOMPurify from "dompurify";
 import { Summarizer } from "ts-summarizer";
 
 // TODO - need to reset the slider values when reader mode is toggled off
-// TODO - move the close and collapse button all the way to the top right of the widget above the header
 // TODO - add aria labels to the collapse and close buttons as well as the close button in the modal
-// TODO - make a spotlight effect where the highlighted area the reading ruler is, it's not dimmed, but the rest of the overlay is dimmed when the button is toggled on
-// TODO - fix the issue where the slider controls won't work on reader mode
 // ! - need to make sure the CSS of the widget doesn't get modified by the website's CSS (e.g. by using more specific selectors or inline styles)
-// TODO - for some reason the collapse button shrinks the width
 
 const host = document.createElement("div");
 host.id = "skimble-root";
