@@ -1,4 +1,4 @@
-# Skimble Reader
+# Skimble Reader Widget
 
 Skimble is a Chrome extension designed to improve digital reading accessibility. By providing tools to reduce visual noise and customize text presentation, it helps users with dyslexia, visual impairments, or general reading fatigue focus on content more effectively.
 
